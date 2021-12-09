@@ -54,7 +54,7 @@
     "jquery": "^3.5.1",
     "jszip": "^3.6.0",
     "mdbootstrap": "^4.19.2",
-    "mel-common": "file:../mel-common",
+    "mel-common": "^1.1.5",
     "moment": "^2.28.0",
     "ngx-bootstrap": "^6.2.0",
     "ngx-electron": "^2.2.0",
