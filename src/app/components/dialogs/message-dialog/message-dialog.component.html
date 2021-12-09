@@ -1,0 +1,35 @@
+<h4 mat-dialog-title>{{data.title | translate}}</h4>
+<mat-dialog-content class="mat-typography">
+  {{data.message}} 
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <div *ngIf="okButton">
+    <button mat-button [mat-dialog-close]="answer(0)" cdkFocusInitial="focusOk">
+        {{"Dialog.Action.OK" | tanslate }}
+    </button>
+  </div>
+  <div *ngIf="yesButton">
+    <button mat-button [mat-dialog-close]="answer(0)" cdkFocusInitial="focusOk">
+        {{"Dialog.Action.Yes" | translate }}
+    </button>
+  </div>
+  <div *ngIf="cancelButton">
+    <button mat-button [mat-dialog-close]="answer(1)" cdkFocusInitial="focusReject">
+        {{"Dialog.Action.Cancel" | translate}}
+    </button>
+  </div>
+  <div *ngIf="noButton">
+    <button mat-button [mat-dialog-close]="answer(1)" cdkFocusInitial="focusReject">
+        {{"Dialog.Action.No" | translate}}
+    </button>
+  </div>
+
+  <div *ngIf="ignoreButton">
+    <button mat-button [mat-dialog-close]="answer(2)" cdkFocusInitial="focusIgnore">
+        {{"Dialog.Action.Ignore" | translate }}
+    </button>
+  </div>
+</mat-dialog-actions>
+
+

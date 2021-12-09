@@ -1,0 +1,36 @@
+<div style="height:93.5%;display:flex; justify-content:center;">
+  
+    <mat-card style="min-width:100%">
+      <mat-card-header>    
+        <mat-toolbar role="navigation" color="primary" >
+          <span> {{caption}}</span>
+          <span class="fill-remaining-space"> </span>
+          <button mat-icon-button (click)="add()"  [disabled]="!insertAllowed"           matTooltip="Neu"><mat-icon>add</mat-icon> </button>
+          <button mat-icon-button (click)="save()"  matTooltip="Speichern"><mat-icon>done</mat-icon> </button>
+          <button mat-icon-button (click)="remove()"   [disabled]="!deleteAllowed || isInsertMode"  matTooltip="Löschen"><mat-icon>delete</mat-icon> </button>     
+          <div style="margin-left:30px"></div>   
+          <button mat-icon-button routerLink = "/{{list}}" matTooltip="Abbruch">   <mat-icon>clear</mat-icon> </button>      
+        </mat-toolbar>
+      </mat-card-header>
+  
+      <mat-card-content *ngIf="rec" ng-controller="card" fxLayout="column">
+        <mat-accordion fxFlex="1 1" >
+          <mat-expansion-panel  [expanded]="true" hideToggle>
+            <mat-expansion-panel-header>Allgemein</mat-expansion-panel-header>
+            <div  fxLayout="column" fxLayoutAlignColumn="start stretch" fxLayoutGap="20px 20px" gdAlignColumns="start-stretch" >
+  
+              <mat-form-field  gdRow="1" gdColumn="1" fxFlex="1 1 30%">
+                <code-input id="field1.1" [disabled]="!insertAllowed" (change)="onChange($event)" [(ngModel)]="{{rec.Field1.1}}" placeholder="field1.1-caption" required > 
+                </code-input>
+              </mat-form-field>
+              
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion>   
+        <!-- sublist -->
+        <mat-accordion fxFlex="1 1">   
+          <list-part entity='Entity' link='{"targetfieldname":"{{rec.field}"}'  title="sublist-title"  expanded="true" ></list-part>
+        </mat-accordion>     </mat-card-content>
+    </mat-card>
+  
+  </div>

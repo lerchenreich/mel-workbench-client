@@ -1,0 +1,152 @@
+<!-- readonly list-fields -->
+<ng-template viewBoolean let-value="value">   
+  <mel-list-checkbox 
+    [value]="value" 
+    [editable]="false"
+  ></mel-list-checkbox>
+</ng-template>
+
+<ng-template viewEnum 
+  let-meta="meta" 
+  let-value="value" 
+  let-editable="editable" > 
+  <mel-enum 
+    [sourceMap]="meta.enumValues" 
+    [targetMap]="meta.display.enumValues" 
+    [value]="value" 
+    [disabled]="!meta.editable"
+  ></mel-enum>
+</ng-template> 
+
+<ng-template viewInput let-value="value">{{value}}</ng-template> 
+
+<!-- Editable list-fields-->
+<ng-template listEnum 
+  let-value="value" 
+  let-meta="meta"
+  let-changedObs="changedObs">
+  <mel-list-select 
+    [value]="value" 
+    [options]="meta"
+    [changedObs]=" changedObs" 
+  >
+  </mel-list-select>
+</ng-template> 
+
+<ng-template listBoolean 
+  let-value="value" 
+  let-changedObs="changedObs"
+  >
+  <mel-list-checkbox 
+    [value]="value"
+    [editable]="true"
+    [changedObs]="changedObs" 
+  >
+  </mel-list-checkbox>
+</ng-template>
+
+<ng-template listInput 
+  let-subtype="subType" 
+  let-value="value" 
+  let-lookupFor="lookupFor"
+  let-assistObs="assistObs"
+  >     
+  <mel-list-input  
+    [subType]="subType" 
+    [value]="value" 
+    [lookupFor]="lookupFor"
+    [assistObs]="assistObs" 
+  >
+  </mel-list-input>
+</ng-template>     
+
+<!-- Editable Card-fields -->
+<ng-template cardEnum 
+  let-caption="caption" 
+  let-editable="editable"
+  let-value="value" 
+  let-options="meta" 
+  let-changedObs="changedObs" 
+  >
+  <mel-card-select 
+    [caption]="caption"  
+    [editable]="editable"
+    [value]="value" 
+    [options]="options"
+    [changedObs]="changedObs" 
+  ></mel-card-select>
+</ng-template> 
+
+<ng-template cardBoolean 
+  let-caption="caption" 
+  let-editable="editable"  
+  let-value="value" 
+  let-changedObs="changedObs"> 
+  <mel-card-checkbox 
+    [caption]="caption"
+    [editable]="editable"
+    [value]="value"
+    [changedObs]="changedObs" 
+  ></mel-card-checkbox>
+</ng-template>
+
+<ng-template cardInput 
+  let-caption="caption" 
+  let-subtype="subType" 
+  let-editable="editable"
+  let-value="value" 
+  let-lookupFor="lookupFor"
+  let-assistObs="assistObs"
+  let-changedObs="changedObs"
+  > 
+  <mel-card-input 
+    [caption]="caption"
+    [placeholder]="caption" 
+    [subType]="subType" 
+    [editable]="editable"
+    [value]="value"
+    [lookupFor]="lookupFor"
+    [assistObs]="assistObs"
+    [changedObs]="changedObs" 
+  >
+  </mel-card-input>
+  </ng-template>     
+
+  <!-- App -->
+
+<mat-toolbar role="heading" color="primary">
+  <span >{{title}}</span>
+  <span class="fill-remaining-space"> </span>
+  
+  <button mat-button routerLink="/meltable-list">{{'Menu.Entities'|translate}}</button>
+  <button mat-icon-button [matMenuTriggerFor]="appMenu" [matMenuTriggerData]="menuData"><mat-icon>more_vert</mat-icon></button>
+ 
+  <mat-menu #appMenu="matMenu"> 
+    <ng-template matMenuContent let-display="display" let-data="data">
+      <a mat-menu-item routerLink="/create-server" >{{'Menu.CreateAppServer' | translate }}</a>   
+      <a mat-menu-item routerLink="/create-client" >{{'Menu.CreateAppClient' | translate }}</a>   
+      <a mat-menu-item [style.display]="inline"  routerLink="/setup-card" >{{'Menu.Setup' | translate }}</a>   
+      <a mat-menu-item routerLink="/create-app" >{{'GettingStarted.Options.Create' | translate }}</a>   
+     <button mat-menu-item  [matMenuTriggerFor]="allApps"  [matMenuTriggerData]="data" >{{'Menu.AllApps' | translate }}</button>  
+      <!--button mat-menu-item [style.display]="display.changeCompany"  [matMenuTriggerFor]="changeCompany" [matMenuTriggerData]="data" >{{'Menu.ChangeCompany' | translate }}</button-->  
+    </ng-template>
+  </mat-menu>    
+ 
+  <mat-menu #allApps="matMenu">
+    <ng-template matMenuContent let-apps="apps">
+      <ng-container *ngFor="let app of apps"> 
+        <button mat-menu-item (click)="changeAppTo(app.key)">{{app.value}}</button> 
+      </ng-container>
+    </ng-template>
+  </mat-menu>
+
+  <!--mat-menu #changeCompany="matMenu">
+    <ng-template matMenuContent let-companies="companies">
+      <ng-container *ngFor="let company of companies"> 
+        <button mat-menu-item (click)="changeCompanyTo(company.key)">{{company.value}}</button> 
+      </ng-container>
+    </ng-template>
+  </mat-menu-->
+</mat-toolbar>
+<app-alert > </app-alert>
+<router-outlet></router-outlet>

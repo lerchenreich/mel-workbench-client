@@ -1,0 +1,54 @@
+{
+    "true" :    "Yes",
+    "false":    "No",
+    "App" : {
+        "Title" : "App-Title{{testFlag}}"
+    },
+    "Menu" : {
+        "Button" : {
+            "New" : "New",
+            "Edit": "Edit",
+            "Cancel" :"Cancel",
+            "Delete" :"Delete"
+        },
+        "Setup": "Setup"
+    },
+    "List" : {
+        "MelTable" : "Tables"
+    },
+    "Card" : {
+        "MelTable" : "Table"
+    },
+    "SubList" : {
+        "Entity" : "{{value}}"
+    },
+    "Lookup" : {
+        "Entity" : "{{value}}"
+    },
+
+    "MelTable" : {
+        "SqlName" : "Sql-Name",
+        "Name" : "Name",
+        "PrimaryIndex": "Primary Index",
+        "Id": "Id",
+        "Schema" : "Schema",
+        "Active" : "Active"
+    },
+    "MelColumn" : {
+        "SqlTableName" : "Sql-Tablename",
+        "Id" : "Id",
+        "Name" : "Name",
+        "Datatype" : "Datatype",
+        "Length" : "Length",
+        "IsPrimary" : "Primarakey",
+        "IsAutoincrement" : "Autoincrement",
+        "Class" : "Class",
+        "SqlName" : "Sql-Name",
+        "SqlDatatype" : "Sql-Datatype",
+        "DefaultValue" : "DefaultValue",
+        "Format" : "Format",
+        "Nullable" : "Nullable",
+        "EnumValues": "Enumeration Values",
+        "Comment" : "Comment"
+    }
+}

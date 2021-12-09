@@ -1,0 +1,29 @@
+<div #page style="height:100%; display:flex; justify-content:center;">
+  <mat-card style="min-width:100%">
+    <mat-card-header>
+      <span>{{"Dialog.MetadataImport.Title" | translate}}</span>
+    </mat-card-header>
+   
+    <mat-card-content>
+      <mel-list #melList class="mat-elevation-z4" [style.height]="listHeight" [context]="listContext" [dataSource]="dataSource"></mel-list>
+      <div #pageSlider class="pageSlider-v" >
+        <ng5-slider [(value)]="currPageNo" [options]="sliderOptions" (userChangeEnd)="onSliderChangeEnd($event)"> </ng5-slider>   
+      </div>      
+    </mat-card-content>
+
+    <mat-dialog-actions align="end">
+      <div>
+        <button mat-button [mat-dialog-close]="this">
+            {{"Dialog.Action.Import" | translate }}
+        </button>
+      </div>
+      <div>
+        <button mat-button  (click)="cancelClicked()">
+            {{"Dialog.Action.Cancel" | translate}}
+        </button>
+      </div>
+    </mat-dialog-actions>
+  
+  </mat-card>
+</div>
+

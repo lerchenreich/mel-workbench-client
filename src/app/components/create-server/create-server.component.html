@@ -1,0 +1,60 @@
+<div style="height:93.5%;display:flex; justify-content:center;">
+  
+  <mat-card style="min-width:100%">
+    <mat-card-header>    
+      <mat-toolbar role="navigation" color="primary" >
+        <span> {{'CreateServer.Title' | translate}}</span>
+        <span class="fill-remaining-space"> </span>
+        <button mat-icon-button (click)="save()" [disabled]="!cardData?.isValid" matTooltip="{{'Menu.Button.Save'|translate}}">
+          <mat-icon>done</mat-icon> </button>
+        <div style="margin-left:30px"></div>   
+        <button mat-icon-button routerLink = "/" matTooltip="{{'Menu.Button.Cancel'|translate}}">   
+          <mat-icon>clear</mat-icon> </button> 
+      </mat-toolbar>     
+    </mat-card-header>
+  
+    <mat-card-content ng-controller="card" fxLayout="column">
+      <ngb-accordion #acc="ngbAccordion" activeIds="panel-default">
+        <ngb-panel id="panel-default">
+          <ng-template ngbPanelTitle>
+            <span>{{'Card.Tab.Default' | translate }}</span>
+          </ng-template>
+          <ng-template *ngIf="contextMap" ngbPanelContent>
+              <div class="row">
+                <div class="col-lg">
+                  <mel-card-field [context]="context('name')" 
+                                  caption="{{'CreateServer.Field.Name.Caption'|translate}}"
+                                  hint="{{'CreateServer.Field.Name.Hint'|translate}}">
+                  </mel-card-field> 
+                </div>
+                <div class="col-lg">
+                  <mel-card-field [context]="context('version')" 
+                                  caption="{{'CreateServer.Field.Version.Caption'|translate}}"
+                                  hint="{{'CreateServer.Field.Version.Hint'|translate}}">
+                  </mel-card-field>
+                </div>          
+              </div>  
+              <div class="row">
+                <div class="col-lg">
+                  <mel-card-field [context]="context('description')" 
+                                  caption="{{'CreateServer.Field.Description.Caption'|translate}}"
+                                  hint="{{'CreateServer.Field.Description.Hint'|translate}}">
+                </mel-card-field>
+              </div>          
+                <div class="col-lg">
+                  <mel-card-field [context]="context('targetDir')" 
+                                  caption="{{'CreateServer.Field.TargetDir.Caption'|translate}}"
+                                  hint="{{'CreateServer.Field.TargetDir.Hint'|translate}}"
+                                  [assistObs]="targetDirAssistObs"
+                              >
+                  </mel-card-field> 
+              </div>          
+            </div>    
+          </ng-template>
+        </ngb-panel>
+      </ngb-accordion>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+

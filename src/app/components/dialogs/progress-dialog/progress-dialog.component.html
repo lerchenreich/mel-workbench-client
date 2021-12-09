@@ -1,0 +1,13 @@
+<h4 mat-dialog-title>{{data.title | translate}}</h4>
+<mat-dialog-content class="mat-typography">
+  <ngb-progressbar [animated]="data.animate" [striped]="data.striped" [height]="data.height" [max]="data.max" [type]="data.type" [value]="data.current">{{data.label}}</ngb-progressbar>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <div *ngIf="cancelButton">
+    <button mat-button [mat-dialog-close] cdkFocusInitial="true">
+        {{"Dialog.Action.Cancel" | translate}}
+    </button>
+  </div>
+</mat-dialog-actions>
+

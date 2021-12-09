@@ -1,0 +1,44 @@
+import { Component, Injector, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CardPage } from '../card-page';
+
+import { [entity] } from 'src/app/models/[entity]';
+
+@Component({
+  selector: 'app-[entity]-card',
+  templateUrl: './[entity]-card.component.html',
+  styleUrls: ['./[entity]-card.component.scss']
+})
+export class [entity]CardComponent  extends CardPage<[entity]> implements OnInit {
+
+  routeEditEntity  : string[] = ['/'];
+  routeNewEntity   : string[] = ['/'];
+  routePrevious    : string[] = ['/[entity]-list'];
+
+
+  constructor(injector : Injector, private route: ActivatedRoute,
+              router: Router,        
+              messageBox : MatDialog      
+            ) { 
+    super([entity], injector, router, { insertAllowed : true, deleteAllowed:true, modifyAllowed:true}, messageBox);
+  }
+  
+
+  ngOnInit(): void {
+    let pk1 = this.route.snapshot.paramMap.get('[primarykey1]'); // is string
+    let pk2 = this.route.snapshot.paramMap.get('[primarykey2]'); // is number
+    if ( (pk1.length === 0) || (pk2 === 0)){    
+      this.add();
+    } 
+    else {
+      this.rec.[primarykey1] = pk1
+      this.rec.[primarykey2] = pk2
+      this.get(); 
+    }
+  }
+  
+  onChange(event:any){
+    this.trySave();
+  }
+}

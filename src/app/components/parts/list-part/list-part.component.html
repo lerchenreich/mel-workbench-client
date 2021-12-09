@@ -1,0 +1,36 @@
+<mat-expansion-panel #page [expanded]="expanded">
+  <mat-expansion-panel-header>
+    <mat-toolbar role="navigation" style="background:#ffffff;" >
+      <span>{{title}}</span>
+      <span class="fill-remaining-space"> </span>
+      <button mat-icon-button (click) ="runFilterDialog($event)" [disabled]="locked"                         
+          matTooltip="{{'Menu.Button.Filter'|translate}}">
+        <mat-icon svgIcon="filter"></mat-icon></button>  
+      <button mat-icon-button (click) ="removeFilters($event)" [disabled]="locked || !hasUnlockedFilters"    
+          matTooltip="{{'Menu.Button.ClearFilter'|translate}}">
+        <mat-icon svgIcon="clear_filter"></mat-icon></button>     
+        <button mat-icon-button (click) ="runFlowFilterDialog($event)" [disabled]="locked" [hidden]="!hasFlowFilters"  
+            matTooltip="{{'Menu.Button.FlowFilter'|translate}}">
+          <mat-icon svgIcon="flowfilter"></mat-icon></button>  
+        <button mat-icon-button (click) ="removeFlowFilters($event)"   [disabled]="locked || !hasActiveFlowFilters" [hidden]="!hasFlowFilters" 
+            matTooltip="{{'Menu.Button.ClearFlowFilter'|translate}}">
+          <mat-icon svgIcon="clear_flowfilter"></mat-icon></button>     
+        <button mat-icon-button (click)="add($event)"    [disabled]="!canInsert"                           
+            matTooltip="{{'Menu.Button.New'|translate}}">
+          <mat-icon>add</mat-icon> </button>
+        <button mat-icon-button (click)="remove($event)" [disabled]="!deleteAllowed || nothingSelected" 
+          matTooltip="{{'Menu.Button.Delete'|translate}}">
+        <mat-icon>delete</mat-icon> </button>     
+        <button mat-icon-button (click)="save($event)"   [disabled]="!modifyAllowed || nothingSelected  || listComponent.firstInvalidRow"
+          matTooltip="{{'Menu.Button.Save'|translate}}">
+        <mat-icon>done</mat-icon> </button>
+      </mat-toolbar>
+  </mat-expansion-panel-header>
+  
+  <mel-list #melList class="mat-elevation-z0"  [style.height]="listHeight"          
+            [context]="listContext" [dataSource]="dataSource">
+  </mel-list>
+  <div #pageSlider class="pageSlider-v" >
+    <ng5-slider [(value)]="currPageNo" [options]="sliderOptions" (userChangeEnd)="onSliderChangeEnd($event)"> </ng5-slider>   
+  </div>
+</mat-expansion-panel>

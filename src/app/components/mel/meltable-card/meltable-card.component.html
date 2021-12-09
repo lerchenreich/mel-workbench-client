@@ -1,0 +1,49 @@
+<div style="height:93.5%;display:flex; justify-content:center;">
+  
+  <mat-card style="min-width:100%">
+    <mat-card-header>    
+      <mat-toolbar role="navigation" color="primary" >
+        <span> {{title}}</span>
+        <span class="fill-remaining-space"> </span>
+        <button mat-icon-button (click)="save()"   [disabled]="!modifyAllowed" matTooltip="{{'Menu.Button.Save'|translate}}"><mat-icon>done</mat-icon> </button>
+        <button mat-icon-button (click)="remove()" [disabled]="!deleteAllowed || isInsertMode"  matTooltip="{{'Menu.Button.Delete'|translate}}"><mat-icon>delete</mat-icon> 
+        </button>     
+        <div style="margin-left:30px"></div>   
+        <button mat-icon-button routerLink = "/meltable-list" matTooltip="{{'Menu.Button.Cancel'|translate}}">   <mat-icon>clear</mat-icon> </button>      
+      </mat-toolbar>
+    </mat-card-header>
+  
+    <mat-card-content *ngIf="cardData" ng-controller="card" fxLayout="column">
+      <div class="accordion" id="part1">
+        <div class="accordion-item"  [expanded]="true" hideToggle>
+          <h2 class="accordion-header" id="heading1">
+            <button class="accordion-button" type="button" 
+                    data-mdb-toggle="collapse" data-mdb-target="#collapse1"
+                    aria-expanded="true" aria-controls="collapse1"
+                    >
+              {{'Card.Tab.Default' | translate }}
+            </button>
+          </h2>
+          <div id="collapse1" class="accordion-collapse collaps show" aria-labelledby="heading1" data-mdb-parent="#part1">
+            <div class="accordion-body container-fluid g-0" >
+              <div class="row">
+                <div class="col-lg"><mel-card-field [context]="context('Name')"> </mel-card-field>  </div>
+                <div class="col-lg"><mel-card-field [context]="context('Domain')"> </mel-card-field>   </div>          
+                <div class="col-lg"><mel-card-field [context]="context('Active')" > </mel-card-field>   </div>  
+              </div>    
+            </div> 
+          </div>
+        </div>
+      </div>
+      <mat-accordion fxFlex="1 1">   
+        <list-part entityConfig='{ "name":"MelField", "permissions":"imd", "link":{"TableName":"{{rec.Name}}"} }'
+                    [expanded]="true" 
+                    [locked]="sublistLocked" 
+                  >
+        </list-part>
+      </mat-accordion>  
+  
+    </mat-card-content>
+  </mat-card>
+</div>
+  

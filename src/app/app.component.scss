@@ -1,0 +1,164 @@
+::ng-deep {
+    ng-scrollbar.scroll-event {
+      --scrollbar-size: 8px;
+      --scrollbar-thumb-color: gray;
+      --scrollbar-hover-size: 12px;
+      --scrollbar-track-color: rgba(0, 0, 0, 0.05);
+      --scrollbar-border-radius: 10px;
+  
+      height: 800px;
+      max-height: 800px;
+      border-radius: 3px;
+      border: 2px solid rgba(0, 0, 0, 0.05);
+    }
+
+
+    /* horz */
+    .pageSlider .ng5-slider .ng5-slider-bar {
+        background: lightblue;
+        height: 2px;
+      }
+    .pageSlider .ng5-slider .ng5-slider-selection {
+        background: blue;
+      }
+    .pageSlider .ng5-slider .ng5-slider-pointer {
+        width: 8px;
+        height: 16px;
+        top: auto; /* to remove the default positioning */
+        bottom: 6px;
+        background-color: #333;
+        border-color: white;
+        border-top-left-radius: 3px; 
+        border-top-right-radius: 3px;
+    }
+    .pageSlider .ng5-slider .ng5-slider-pointer:after {
+        display: none;
+      }
+    .pageSlider .ng5-slider .ng5-slider-bubble {
+        bottom: 16px;
+      }
+    .pageSlider .ng5-slider .ng5-slider-limit {
+        font-weight: bold;
+        color: blue;
+      }
+
+    .pageSlider .ng5-slider .ng5-slider-tick {
+        width: 1px;
+        height: 10px;
+        margin-left: 4px;
+        border-radius: 0;
+        background: lightblue;
+        top: -1px;
+      }
+    
+    .pageSlider .ng5-slider .ng5-slider-ticks-values-under .ng5-slider-tick-value {
+        font-size: 10px;
+        bottom:-20px;
+      }
+  
+    .pageSlider .ng5-slider .ng5-slider-limit {
+        font-weight: bold;
+    }
+
+    /* vertical scrollbar */
+    .pageSlider-v {
+      --colorSelected : rgba(0,0,0,0.5);
+      --colorUnselected : rgba(0,0,0,0.1);
+
+      z-index: 3;
+      position: absolute;
+      top:27px;
+      right:-14px;
+    }
+    .pageSlider-v .ng5-slider.vertical .ng5-slider-bar-wrapper {
+      width: 20px;
+    } 
+    .pageSlider-v .ng5-slider .ng5-slider-bar {
+      background: var(--colorUnselected);
+      height: 2px;
+    }
+    .pageSlider-v .ng5-slider .ng5-slider-selection {
+        background:var(--colorUnselected);
+      }
+    .pageSlider-v .ng5-slider.vertical .ng5-slider-pointer {
+        left:-6px!important;
+        width: 16px;
+        height: 8px;
+        top: auto;
+        background-color: var(--colorSelected);
+        border-color: white;
+        border-radius: 3px;
+    }
+    .pageSlider-v .ng5-slider .ng5-slider-pointer:after {
+        display: none;
+      }
+    .pageSlider-v .ng5-slider.vertical .ng5-slider-bubble {
+        bottom: 16px;
+        left:9px!important;
+      }
+    .pageSlider-v .ng5-slider.vertical .ng5-slider-limit {
+        font-weight: bold;
+    }
+       
+    .pageSlider-v .ng5-slider .ng5-slider-tick {
+        width: 10px;
+        height: 1px;
+        margin-left: 4px;
+        border-radius: 0;
+        background: var(--colorUnselected);
+        top: -1px;
+      }
+    
+    .pageSlider-v .ng5-slider .ng5-slider-ticks-values-under .ng5-slider-tick-value {
+        font-size: 10px;
+        bottom:-20px;
+      }
+
+    .pageSlider-v .ng5-slider .ng5-slider-limit {
+        font-weight: bold;
+    }
+
+    /* Datum */
+    
+    .dateSlider .ng5-slider .ng5-slider-bar {
+        background: lightgray;
+        height: 2px;
+      }
+    .dateSlider .ng5-slider .ng5-slider-selection {
+        background: gray;
+      }
+    .dateSlider .ng5-slider .ng5-slider-pointer {
+        width: 8px;
+        height: 16px;
+        top: auto; /* to remove the default positioning */
+        bottom: 6px;
+        background-color: #333;
+        border-color: white;
+        border-top-left-radius: 3px; 
+        border-top-right-radius: 3px;
+    }
+    .dateSlider .ng5-slider .ng5-slider-pointer:after {
+        display: none;
+      }
+    .dateSlider .ng5-slider .ng5-slider-bubble {
+        bottom: 16px;
+      }
+    .dateSlider .ng5-slider .ng5-slider-limit {
+        font-weight: bold;
+        color: blue;
+      }
+    .dateSlider .ng5-slider .ng5-slider-tick {
+        width: 1px;
+        height: 10px;
+        margin-left: 4px;
+        border-radius: 0;
+        background: lightblue;
+        top: -1px;
+      }
+    
+    .dateSlider .ng5-slider .ng5-slider-tick.ng5-slider-selected {
+       background: blue;
+    }
+  
+  }
+  

@@ -1,0 +1,33 @@
+div {
+    display: flex;
+}
+input {
+    border: none;
+    background: none;
+    padding: 0;
+    outline: none;
+    font: inherit;
+    text-align: left;
+}
+span {
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+  :host.floating span {
+    opacity: 1;
+  }
+
+
+.mat-icon {
+  font-size:16px !important;
+}
+.small-icon-button {
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  margin: 2px !important;
+  font-size: 16;
+  display : none;
+}
+
+   

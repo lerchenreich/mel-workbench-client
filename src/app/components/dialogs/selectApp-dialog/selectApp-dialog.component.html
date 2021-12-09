@@ -1,0 +1,44 @@
+
+<div class="modal-header" >
+  <h4 class="modal-title" style="text-align: center;">{{'GettingStarted.Title' | translate }}</h4>
+</div> 
+<div class="modal-body" style="text-align: center;">
+  <div [ngSwitch]="waitingFor" style="text-align: center;margin-top: 4em;">
+    <ng-container *ngSwitchCase="'MasterService'">
+      <h6>{{masterStateId | translate}}</h6><br/>
+      <div  style="color: red;">    
+        <h5>{{'GettingStarted.Actions.CheckMasterService' | translate:config}}</h5>
+        <h5>{{'GettingStarted.Actions.StartMasterService' | translate}}</h5>
+    </div>
+    </ng-container>
+    
+    <ng-container *ngSwitchCase="'AppService'" style="color: red;">
+      <h6>{{appStateId | translate}}</h6><br/>
+      <div  style="color: red;">
+        <h5>{{'GettingStarted.Actions.CheckAppService' | translate:config}}</h5>
+        <h5>{{'GettingStarted.Actions.StartAppService' | translate}}</h5>
+      </div>
+    </ng-container>
+    
+    <ng-container *ngSwitchCase="'None'" >
+      <mat-form-field style="width: fit-content;">
+        <mat-label>{{'GettingStarted.Field.Select.Label' | translate }}</mat-label>
+      <mat-select [(ngModel)]="selectedAppCode" (ngModelChange)="onSelectionChanged()" >
+          <mat-option *ngFor="let appKeyPair of appKeyPairs" [value]="appKeyPair.key">{{appKeyPair.value}}</mat-option>
+          <mat-option [value]="createCommand">{{'GettingStarted.Options.Create'|translate}}</mat-option>
+        </mat-select>
+        <mat-hint>{{'GettingStarted.Field.Select.Hint' | translate }}</mat-hint>
+      </mat-form-field>
+    </ng-container>
+  </div>    
+</div>
+<div class="modal-footer">
+  <button mat-raised-button color="warn" (click)="cancelClicked()">{{'Command.Cancel'|translate}}</button>
+  <button mat-raised-button color="primary" (click)="okClicked()" [disabled]="!releaseOk">{{'Command.Ok'|translate}}</button>
+</div>
+
+
+
+ 
+
+

@@ -1,0 +1,242 @@
+{
+  "Message" : {
+    "Canceled" : "Vorgang abgebrochen",
+    "DeleteTitle" : "Daten löschen", 
+    "DeleteOne" : "Möchten Sie den Datensatz '{{context}}' löschen?",
+    "DeleteMore" : "Möchten Sie die {{count}} markierten Datensätze löschen?",
+    "MoreDeleted" : "Es wurden {{count}} {{pluralName}} gelöscht",
+    "OneDeleted" : "{{singularName}} wurde gelöscht",
+    "NoneDeleted": "Es wurde nichts gelöscht",
+    "RenameTitle": "Datensatz umbenennen",
+    "RenameOne" : "Möchten Sie den Datensatz '{{context}}' umbenennen?",
+    "OneRenamed" : "Datensatz umbenannt",
+    "NoneRenamed": "Es wurde nichts umbenannt",
+    "Import" : {
+      "Metadata" : {
+        "Title": "Metadaten importieren",
+        "Text" : "Möchten Sie die Metadaten für diese Tabllen importieren?",
+        "Done" : "Metadaten importiert"
+      }
+    }
+  },
+  "Validation": {
+    "ValidationError" : "{{fieldname}} kann nicht überprüft werden! Fügen Sie die Spalte {{missing}} ein", 
+    "DateTime" : "Das Datum oder die Zeit ist ungültig",
+    "Date" : "Das Datum ist ungültig",
+    "Time" : "Die Zeit ist ungültig",
+    "Number" : "Zahl erwartet",
+    "Integer" : "Ganze Zahl erwartet",
+    "Decimal" : "Dezimalzahl erwartet",
+    "Boolean" : "0 (=nein) oder 1 (=ja) erwartet",
+    "String"  : "Zeichenkette erwartet",
+    "NotBlank" : "Darf nicht leer sein",
+    "Blank"    : "Muss leer sein",
+    "NotZero" : "Darf nicht Null sein",
+    "NotTrue" : "Muss inaktiv sein",
+    "True"    : "Muss aktiv sein",
+    "SqlIdentifier" : "Nur Buchstaben, Zahlen, '_' und '-' erlaubt"
+  },
+  "Command" : {
+    "Ok" : "OK",
+    "Continue" : "Weiter",
+    "Cancel" : "Abbruch",
+    "No" : "Nein",
+    "Yes" : "Ja",
+    "Create" : "Generieren",
+    "Back" : "Zurück",
+    "Next" : "Weiter"
+  },
+  "App" : {
+    "Title" : "Anwendungstitel{{testFlag}}",
+    "RestService" : {
+        "NoConnection" : "Keine Verbindung zum Server"
+    }
+  },
+  "GettingStarted" : {
+    "Title" : "App auswählen",
+    "States" : {
+      "MasterService" : {
+        "Error" : "Keine Verbindung zum Dev-Service ",
+        "Running" : "Dev-Service läuft"
+      },
+      "AppService" : {
+        "Error" : "Keine Verbindung zum App-Service",
+        "Running" : "App-Service läuft"
+      }
+    },
+    "Actions" : {
+      "StartMasterService" : "Starten Sie den Dev-Service!",
+      "StartAppService" : "Starten Sie den App-Service",
+      "CheckMasterService" : "Prüfen Sie Host [{{host}}] und Port [{{port}}] des Dev-Services!",
+      "CheckAppService" : "Prüfen Sie den App-Service-Endpoint [{{restAppEndpoint}}]!"
+     },
+     "Options" : {
+       "Create" : "Neue App"
+     },
+     "Field" : {
+       "Select" : {
+         "Label" : "Wählen Sie",
+         "Hint"  : "Wählen Sie eine App aus oder generieren eine neue App"
+       }
+     }
+  },
+  "CreateApp" : {
+    "Title" : "Neue Anwendung erstellen",
+    "Field" : {
+      "AppCode" : {
+        "Hint" : "Kurzname, erlaubt: [0-9,a-z,A-Z$_-]",
+        "Caption" : "Codename der Anwendung"
+      },
+      "AppName" : {
+        "Hint"  : "Nach aussen sichtbarer App-Name",
+        "Caption" : "Name der Anwendung"
+      },
+      "Company" : {
+        "Name" : {
+          "Hint"  : "Wem gehören die Daten?",
+          "Caption" : "Mandantenname"
+        },
+        "Database" :{
+          "Caption" : "Datenbankname",
+          "Hint"  : "Name der vorhandenen Datenbank mit dem Datenmodel"
+        }
+      } 
+    },
+    "WaitFor" : "Datenbank '{{appCode}}' wird erstellt",
+    "Success" : "Datenbank '{{appCode}}' wurde erstellt",
+    "Failed"  : "Datanbank '{{appCode}}' konnte nicht erstellt werden"
+  },
+  "CreateServer" : {
+    "Title" : "REST-Server generieren",
+    "WaitFor" : "wird generiert...",
+    "Success" : "Server wurde generiert",
+    "Failed" : "Server konnte nicht generiert werden",
+    "SelectFolder" : "Zielordner auswählen",
+    "Field" : {
+      "Name" : {
+        "Caption" : "Server-Name",
+        "Hint" : "Paketname des REST-Servers"
+      },
+      "Version" : {
+        "Caption" : "Version",
+        "Hint" : "Format: major.minor.build"
+      },
+      "Description" : {
+        "Caption" : "Beschreibung",
+        "Hint" : ""
+      },
+      "TargetDir" : {
+        "Caption" : "Zielordner",
+        "Hint" : "Wählen Sie den Ordner aus, in das das Projekt generiert werden soll"
+      }
+    }
+  },
+  "Menu" : {
+    "Button" : {
+      "New" : "Neu",
+      "Edit": "Bearbeiten",
+      "Cancel" :"Abbruch",
+      "Delete" :"Löschen",
+      "Save" : "Speichern",
+      "Filter" : "Filtern",
+      "FlowFilter" : "Flow-Filter setzen",
+      "ClearFilter" : "Filter löschen",
+      "ClearFlowFilter" : "Flow-Filter löschen",
+      "ImportFromDb" : "Aus Datenbank importieren" 
+    },
+    "Setup": "Einrichtung",
+    "AllApps": "Anwendungen",
+    "RecentApps" : "Kürzlich verwendet",
+    "ChangeCompany": "Mandanten wechseln",
+    "Entities" : "Tabellen",
+    "Pages" : "Formulare",
+    "Codeunits" : "Programmcode",
+    "CreateMelServer" : "Mel Server generieren",
+    "CreateAppServer" : "App Server generieren",
+    "CreateAppClient" : "App Client generieren"
+  }, 
+  "Dialog" : {
+    "Title" : "",
+    "Action" : {
+      "OK" : "Ok",
+      "Yes" : "Ja",
+      "Apply" : "Anwenden",
+      "Import" : "Importieren",
+      "Export" : "Exportieren",
+      "No"  : "Nein",
+      "Cancel" : "Abbruch",
+      "Ignore" : "Ignorieren"
+    },
+    "Filter" : {
+      "Tooltip" : {
+        "Add" : "Neuer Filterausdruck (Ctrl+Enter)",
+        "Ok"  : "Filter anwenden",
+        "Cancel" : "Abbruch"  
+      }
+    },
+    "MetadataImport" : {
+      "Title" : "Tabellen importieren",
+      "ProgressTitle" : "Importiere Tabellen..."
+    }
+  },
+  "List" : {
+    "MelTable" : "Tabellen",
+    "MelColumn": "Spalten"
+  },
+  "Card" : {
+    "Tab" : {
+      "Default" : "Allgemein"
+    },
+    "MelTable" : "Tabelle {{value}}"
+  },
+  "SubList" : {
+    "Entity" : "{{value}}",
+    "MelColumn" : {
+      "Caption" : "Spalten"
+    }
+  },
+
+  "Lookup" : {
+    "Entity" : "{{value}}"
+  },
+
+  "MelTable" : {
+    "mel_captionSingular" : "Tabelle",
+    "mel_captionPlural" : "Tabellen",
+    "Name" : "Name",
+    "PrimaryIndex": "Primärschlüssel",
+    "Domain" : "Bereich",
+    "Active" : "Aktiv",
+    "AppTable" : "App-Tabelle"
+  },
+  "MelField" : {
+    "mel_captionSingular" : "Spalte",
+    "mel_captionPlural" : "Spalten",
+    "Name" : "Name",
+    "Datatype" : "Datentyp",
+    "DatatypeOptions" : {"String" : "Zeichenkette" , "Code" : "Code", "Integer" : "Ganzzahl", "Decimal" : "Dezimal", "DateTime" : "Datum+Zeit", "Date" : "Datum", "Time" : "Zeit", "Boolean" : "Ja/Nein", "Enum" : "Aufzählung", "BigInt" : "Große Ganzahl"},
+    "DatatypeOptionsInv" : {"Zeichenkette": "String" , "Code":"Code", "Ganzzahl" :  "Integer", "Dezimal" :"Decimal","Datum+Zeit" :  "DateTime", "Datum": "Date", "Zeit":"Time", "Ja/Nein" : "Boolean", "Aufzählung": "Enum","Große Ganzahl":  "BigInt"},
+    "Length" : "Länge",
+    "IsPrimary" : "Primärschlüssel",
+    "PrimaryKeyNo" : "Prim.-schlüssel Nr.",
+    "ShowDefault" : "Anzeigen",
+    "ShowInPart" : "In Part anzeigen",
+    "ShowInLookup" : "In Lookup anzeigen",
+    "DefaultSelect" : "Selektieren",
+    "IsAutoincrement" : "Autoincrement",
+    "Class" : "Klasse", 
+    "ClassOptions" : {"Normal" : "Normal", "FlowField" : "Flowfield", "FlowFilter" : "Flowfilter"},
+    "FlowFormula" : "Formel",
+    "SqlDatatype" : "Sql-Datentyp",
+    "DefaultValue" : "Initialer Wert",
+    "Format" : "Format",
+    "Nullable" : "Nullwert zugelassen",
+    "EnumValues": "Aufzählungen",
+    "Updateable": "Änderbar",
+    "Comment" : "Anmerkung"
+  },
+  "DailyGroundValue" :{
+    "mel_captionSingular" : "Bodentemperatur",
+    "mel_captionPlural" : "Bodentemperaturen"
+  }
+}

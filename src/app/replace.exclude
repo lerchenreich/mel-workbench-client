@@ -1,0 +1,94 @@
+
+/**
+ * This class helps to replace characters in a character string, especially for handling escaped characters. 
+ * For this purpose, segments (escaped characters) from the character string to be treated 
+ * are replaced by characters that do not appear in the character string. 
+ * After processing, the replaced character sequences can be restored again or replaced by other character strings
+ * Example: The brackets should be evaluated in a character string. 
+ *          The bracket expressions to be evaluated may contain escaped brackets that should not be evaluated. 
+ *          It is easier to remove the parentheses that are not to be evaluated and to replace them after the evaluation than to parse them
+ * The escaped brackets are first replaced for evaluation.
+ * {
+ *    const replace = new replace('( this is an expression with \\( brackets \\) )', ['\\)'. '\\('] )
+ *    var evaluatedOrChanged = evaluateOrChangeYourString(replace.replaced)
+ *    var restored = replacer.restore(evaluatedOrChanged)
+ *    var restoredTo = replacer.restore(evaluatedOrChanged, [ ']', '[' ]) //change to other brackets
+ * }
+ * This tool is not suitable for long strings that can potentially contain all characters. The number of characters to be replaced is also limited by the character set.
+ */
+export class Replace {
+    private _replaced : string
+    private _replacers : string[]
+    private _wasReplaced : string[]
+  
+    /**
+     * 
+     * @param expression Expression tha will be replaced
+     * @param toReplace  Array of Strings to be replaced
+     */
+    constructor(expression : string, toReplace : string[]){
+      var replacers  : string = '\t\v\0\b\f\n\r^°#~!"§$´`,;:_qwrtzuiopasdfghjklyxcvbnm1234567890QWRTZUIOPASDFGHJKLYXCVBNMeE' //possible replacers
+      this._replaced = expression
+      this._replacers = []
+      this._wasReplaced = toReplace
+      //get the replacers, which are not included in expression
+      var count = toReplace.length
+      if ( count > 0) {
+        for(let c of replacers){
+          if (expression.indexOf(c) < 0){
+            this._replacers.push(c)
+            if (--count === 0) break    
+          }
+        }
+        if (count > 0) throw new Error(`Replace: ${count} characters could not be replaced`)  
+      }
+      this._replacers.forEach( (repl, i) => {
+        this._replaced = Replace.all(this._replaced, [[toReplace[i], repl]])
+      })
+    }
+  
+    /**
+     * the replaced string
+     */
+    get replaced() : string  { return this._replaced }
+  
+    /**
+     * @function restore    Restores the string "toRestore" with the expressions of constuctor.toReplace or "restoreWith" if supported  
+     * @param toRestore     Character string that was determined by "replaced" and evaluated or changed
+     * @param restoreWith   optional: Array of strings to be restored
+     */
+    restore(toRestore : string, restoreWith ? : string[]) : string {
+       
+      if (restoreWith){
+         if (restoreWith.length !== this._replacers.length)
+           throw new Error(`Parameter restoreWith must have the same length like replacers (${this._replacers.length})`)
+      }
+      else restoreWith = this._wasReplaced
+      const searchReplace = []
+      var i = 0
+      for (let replacer of this._replacers) 
+        searchReplace.push([replacer, restoreWith[i++]]) 
+      return Replace.all(toRestore, searchReplace)
+    } 
+  
+    /**
+     * @static 
+     * @function all  replaces all searchstrings with replacestring  
+     * @param targetString  the string to be replaced            
+     * @param searchAndReplaceString Array of [searchString, replaceString]
+     */
+    static all(targetString: string, searchAndReplaceString: Array<Array<string>> ): string {
+      var retValue : string = targetString
+      for (let repl of searchAndReplaceString) {
+        var pos = 0
+        do {
+          pos = retValue.indexOf(repl[0], pos) 
+          if (pos >= 0) {
+            retValue = retValue.replace(repl[0], repl[1])
+            pos += repl[1].length // start the next search after the replacement
+          }
+        } while (pos > 0)
+      }
+      return retValue
+    }
+}
