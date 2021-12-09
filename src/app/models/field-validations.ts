@@ -1,7 +1,5 @@
 
-import { isBlank } from 'mel-common/utils';
-import { blankMandatory, notTrue, notBlank, notFalse, greaterThan } from 'mel-common/validation';
-import { ValidationFunc  } from 'mel-common/types'
+import { isBlank , blankMandatory, notTrue, notBlank, notFalse, greaterThan, ValidationFunc  } from 'mel-common'
 import { MelField } from './mel-field';
 
 async function valueOk(value : any) : Promise<any>{

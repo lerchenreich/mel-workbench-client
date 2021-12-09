@@ -7,8 +7,7 @@ import { Options as SliderOptions, ChangeContext as SliderContext} from '@angula
 import { TranslateService } from '@ngx-translate/core';
 import { untilDestroyed } from '@ngneat/until-destroy';
  
-import { FieldTypes } from 'mel-common/types'
-import { SortOrder } from 'mel-common/api'
+import { FieldTypes, SortOrder } from 'mel-common'
 
 import { DeleteResult, EntityService } from 'src/app/services/core/entityService';
 import { ListRow, PageData } from './page-data';

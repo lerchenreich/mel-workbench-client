@@ -8,7 +8,7 @@ import { fromEvent, NextObserver} from 'rxjs'
 import { delay} from 'rxjs/operators';
 import * as $ from 'jquery'
   
-import { SortOrder } from 'mel-common/api'
+import { SortOrder } from 'mel-common'
 import { ListFieldComponent, NavigationKeys, ShortcutKeys} from '../fields/listfield/listfield.component';
 import { ListRow } from '../../core/page-data';
 import { Sort } from '@angular/material/sort';

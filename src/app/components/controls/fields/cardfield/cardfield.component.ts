@@ -2,7 +2,7 @@ import { Component, Input, HostBinding, ElementRef,TemplateRef, OnInit, AfterVie
 
 import { Field } from '../field';
 import { TranslateService } from '@ngx-translate/core';
-import { FieldTypes } from 'mel-common/types';
+import { FieldTypes } from 'mel-common';
 import { FieldTemplates, TemplateService } from 'src/app/template.service';
 import { FieldContext } from 'src/app/components/core/types';
 import { NextObserver } from 'rxjs';

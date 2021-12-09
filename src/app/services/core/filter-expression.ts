@@ -3,9 +3,7 @@ import 'moment/locale/de'
 import { isEmpty } from 'lodash'
 
 import { ValidationErrors } from '@angular/forms'
-import { Expression, ExpressionType } from 'mel-common/filter-expression'
-import { FieldTypes } from 'mel-common/types'
-import { FilterOperators, Condition} from 'mel-common/api'
+import { ConditionExpression, ExpressionType, FieldTypes , FilterOperators, IQueryCondition} from 'mel-common'
 
 function isValidDate(date : any) : boolean {
   return (date instanceof Date) && !isNaN(date.getTime())
@@ -45,24 +43,24 @@ function ToFriendlyBoolean(operand: ExpressionType, ifInvalid : string) : string
   //return  boolStrings.flat(3).includes(operand as string)?yes[0]:no[0] 
 }
 //
-function validateString(expr : Expression) : ValidationErrors { 
+function validateString(expr : ConditionExpression) : ValidationErrors { 
   if (expr.operator === FilterOperators.like) return null
   return (expr.operands as string[]).filter( value => value.includes('*') ).length  ?
             { operands : `Expression "Operator ${expr.operator} can't be used with '*'-expression`} : null
 }
-function validateNumber(expr : Expression) : ValidationErrors {
+function validateNumber(expr : ConditionExpression) : ValidationErrors {
   const  invalidNumbers = expr.operands.filter(operand => isNaN(operand as number))
   return invalidNumbers.length > 0? {operands : `Expression "${expr.input}" is not a number`} : null
 }
-function validateDate(expr : Expression) : ValidationErrors {
+function validateDate(expr : ConditionExpression) : ValidationErrors {
   const invalidDates = expr.operands.filter( operand => !isValidDate(operand))
   return invalidDates.length > 0? { operands : `Expression "${expr.input}" is no date-value`} : null
 }
-function validateDatetime(expr : Expression) : ValidationErrors {
+function validateDatetime(expr : ConditionExpression) : ValidationErrors {
   const invalidDates = expr.operands.filter( operand => !isValidDate(operand))
   return invalidDates.length > 0? { operands : `Expression "${expr.input}" is no datetime-value`} : null                  
 }
-function validateBoolean(expr : Expression) : ValidationErrors {
+function validateBoolean(expr : ConditionExpression) : ValidationErrors {
   var errors : ValidationErrors = {}
   if ( expr.operator != FilterOperators.equal)
     errors.operator = `Operator "${expr.operator}" can't be used with type 'Boolean'`
@@ -78,11 +76,11 @@ function validateBoolean(expr : Expression) : ValidationErrors {
  * - _operands: string[]
  * - _input: the original expression
  */
-export class ClientExpression extends Expression {
+export class ClientExpression extends ConditionExpression {
  
   private _toApiOperand : (operand : ExpressionType) => string = undefined
   private _toFriendlyOperand : (operand : ExpressionType, ifInvalid : string) => string = undefined
-  private _validate :(expr : Expression) => ValidationErrors 
+  private _validate :(expr : ConditionExpression) => ValidationErrors 
   /**
    * The constructor ist used for a friendly interface. The faster way is to use create()
    * @param columnType 
@@ -104,7 +102,7 @@ export class ClientExpression extends Expression {
     }
   }
 
-  public get apiCondition() : Condition { return {
+  public get queryCondition() : IQueryCondition { return {
     op : this.operator,
     opd : this.apiOperands
   }}

@@ -5,7 +5,7 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
 import { isEmpty } from 'lodash'
 
-import { FilterOperators, SortOrder } from 'mel-common/api'
+import { FilterOperators, SortOrder } from 'mel-common'
 import { ClientFilters } from 'src/app/services/core/filters';
 
 import { ListPage } from '../../core/list.page';

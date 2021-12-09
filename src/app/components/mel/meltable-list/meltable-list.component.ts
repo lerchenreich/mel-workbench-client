@@ -6,8 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { map } from 'rxjs/operators'
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
-import { TableMetadata } from 'mel-common/api';
-import { SqlToFieldtypes } from 'mel-common/types'
+import { TableMetadata, SqlToFieldtypes, ColumnMetadata } from 'mel-common'
 
 import { ListRouted } from '../../core/list.routed';
 import { MelTable } from '../../../models/mel-table';
@@ -98,7 +97,7 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
    */
   private _importTables(tableNames : string[]){
   //  forkJoin([this.infoService.getDbTableRelations({ columnInfo : false, condition : ` IN ('${tableNames.join("','")}')` }),
-    this.appService.getAppTablesMetadata( { columnInfo : true, condition : ` IN ('${tableNames.join("','")}')` } )
+    this.appService.getAppTablesMetadata( { database:'', columnInfo : true, condition : ` IN ('${tableNames.join("','")}')` } )
   //])
     .pipe(untilDestroyed(this))
     .subscribe( (tablesMetadata) => {

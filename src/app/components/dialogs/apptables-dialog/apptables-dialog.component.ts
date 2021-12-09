@@ -4,7 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs'
 
-import { GetTablesOptions } from 'mel-common/api';
+import { GetTablesOptions } from 'mel-common';
 import { AppService } from '../../../services/app-service';
 import { ListPage } from '../../core/list.page';
 import { ListRow } from '../../core/page-data';
@@ -54,7 +54,7 @@ export class AppTablesDialogComponent extends ListPage<MelTable> implements OnIn
       tables => { activeTables = tables.map(table => `\`${table.Name}\``)},
       error =>  { this.alertError("getTableNames-Error: " + error)},
       () =>     {
-        const options : GetTablesOptions = activeTables.length > 0 ? { condition : ` NOT IN (${activeTables.join(",")})` } : undefined 
+        const options : GetTablesOptions = activeTables.length > 0 ? { database : '', condition : ` NOT IN (${activeTables.join(",")})` } : undefined 
         forkJoin([this.appService.getAppTableNames(options), this.appService.getMelTableNames(options)])
         .subscribe( 
           ([namesApp, namesMel]) => { 

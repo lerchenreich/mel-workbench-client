@@ -13,7 +13,7 @@ import { otherApps, changeApp, changeCompany, currentApp, currentCompany, hasCom
 import { AppService } from './services/app-service'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { createAppCommand, SelectAppDialogComponent } from './components/dialogs/selectApp-dialog/selectApp-dialog.component'
-import { KeyPair } from 'mel-common/types'
+import { KeyPair } from 'mel-common'
 import { isEmpty } from 'lodash'
 @Component({
   selector: 'app-root',

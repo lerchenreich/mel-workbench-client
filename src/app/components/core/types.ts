@@ -1,5 +1,5 @@
 import { NextObserver, CompletionObserver } from "rxjs"
-import { SortOrder } from 'mel-common/api'
+import { SortOrder } from 'mel-common'
 import { Field } from "../controls/fields/field"
 import { ListFieldComponent } from "../controls/fields/listfield/listfield.component"
 import { Permissions } from "./page"

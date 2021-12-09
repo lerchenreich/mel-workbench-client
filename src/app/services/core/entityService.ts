@@ -6,8 +6,7 @@ import { isBoolean, validateSync, validate, ValidationError } from "class-valida
 import "reflect-metadata"
 import { isEmpty } from 'lodash'
 
-import *  as Api from 'mel-common/api'
-import { deepCopy } from 'mel-common/utils'
+import { deepCopy, FilterOperators, IRenamingRequest, QueryOptions, SortOrder } from 'mel-common'
 
 import { ClientConfig } from '../../client.configs'
 import { getModulProviderToken} from '../../core'
@@ -66,7 +65,7 @@ export class EntityService<Entity extends Object>{
   public dataSet : Entity[]
   protected dataSetIndex : number = -1
 
-  private options : Api.RequestOptions<Entity>
+  private options : QueryOptions<Entity>
   private _filters : ClientFilters<Entity>
 
   user : string = ''
@@ -167,11 +166,11 @@ export class EntityService<Entity extends Object>{
         this.selectFieldname(fieldName)
     return this;
   }
-  public setOrder(sortOrder : Api.SortOrder<Entity> | undefined ) : EntityService<Entity>{
+  public setOrder(sortOrder : SortOrder<Entity> | undefined ) : EntityService<Entity>{
     this.options.order = sortOrder
     return this
   }
-  public get sortOrder() : Api.SortOrder<Entity> | undefined { return this.options.order }
+  public get sortOrder() : SortOrder<Entity> | undefined { return this.options.order }
 
 
   public setCalcFields(calcFieldNames : (keyof Entity)[]) : EntityService<Entity>{
@@ -269,10 +268,10 @@ export class EntityService<Entity extends Object>{
 
   public setFilter(fieldName: keyof Entity, condition: ClientCondition | string | boolean) : EntityService<Entity>{
     if (typeof condition === 'string')
-      this._filters.add(this.createFieldCondition(fieldName, Api.FilterOperators.cplx, condition))
+      this._filters.add(this.createFieldCondition(fieldName, FilterOperators.cplx, condition))
     else 
     if (typeof condition === 'boolean')
-      this._filters.add(this.createFieldCondition(fieldName, Api.FilterOperators.equal, condition))
+      this._filters.add(this.createFieldCondition(fieldName, FilterOperators.equal, condition))
     else {
       const filter : FieldConditions<Entity> = {}
       filter[fieldName] = condition
@@ -333,7 +332,7 @@ export class EntityService<Entity extends Object>{
      * @param operator      complex or simple operators
      * @param operandsOrFilterExpression is an expression, if the the type is 'string' and the operator is unknown or complex 
      */
-  private createFieldCondition(key : keyof Entity, operator : Api.FilterOperators, operandsOrFilterExpression? : any | any[]) : FieldConditions<Entity> {
+  private createFieldCondition(key : keyof Entity, operator : FilterOperators, operandsOrFilterExpression? : any | any[]) : FieldConditions<Entity> {
     if (!key || !operator) return undefined
     function assertArray(arrayMandatory : boolean){
       const isArray = operandsOrFilterExpression && Array.isArray(operandsOrFilterExpression)
@@ -344,33 +343,33 @@ export class EntityService<Entity extends Object>{
     const columnType = this.columnsMetadataMap.get(key).type
     if (operandsOrFilterExpression){
       switch(operator) {
-        case Api.FilterOperators.unknown: // a simple filterexpression (operator operand, ...)
-        case Api.FilterOperators.cplx:    // a complex filterexpression
+        case FilterOperators.unknown: // a simple filterexpression (operator operand, ...)
+        case FilterOperators.cplx:    // a complex filterexpression
             assertArray(false) 
             fieldCondition[key] = new ClientCondition(operator, [operandsOrFilterExpression], columnType)
             break;
-        case Api.FilterOperators.equal:
-        case Api.FilterOperators.notEqual:
-        case Api.FilterOperators.lessThan:
-        case Api.FilterOperators.moreThan:
-        case Api.FilterOperators.lessThanOrEqual:
-        case Api.FilterOperators.moreThanOrEqual:
-        case Api.FilterOperators.like:
-        case Api.FilterOperators.notLike:
+        case FilterOperators.equal:
+        case FilterOperators.notEqual:
+        case FilterOperators.lessThan:
+        case FilterOperators.moreThan:
+        case FilterOperators.lessThanOrEqual:
+        case FilterOperators.moreThanOrEqual:
+        case FilterOperators.like:
+        case FilterOperators.notLike:
             assertArray(false) 
             fieldCondition[key] = new ClientCondition(operator, [operandsOrFilterExpression], columnType)
             break
-        case Api.FilterOperators.between:
-        case Api.FilterOperators.notBetween:
-        case Api.FilterOperators.in:
-        case Api.FilterOperators.notIn: 
+        case FilterOperators.between:
+        case FilterOperators.notBetween:
+        case FilterOperators.in:
+        case FilterOperators.notIn: 
             assertArray(true)
             fieldCondition[key] = new ClientCondition(operator, operandsOrFilterExpression, columnType) 
             break;
-        case Api.FilterOperators.isEmpty:
-        case Api.FilterOperators.isNotEmpty:
-        case Api.FilterOperators.isNull:
-        case Api.FilterOperators.isNotNull:
+        case FilterOperators.isEmpty:
+        case FilterOperators.isNotEmpty:
+        case FilterOperators.isNull:
+        case FilterOperators.isNotNull:
             console.log(`createFieldCondition: for operator "${operator}" no operand "${operandsOrFilterExpression}" is expected`)
             fieldCondition[key] = new ClientCondition(operator, undefined, columnType) 
             break;
@@ -381,10 +380,10 @@ export class EntityService<Entity extends Object>{
     }   
     else {
       switch(operator){
-        case Api.FilterOperators.isEmpty:
-        case Api.FilterOperators.isNotEmpty:
-        case Api.FilterOperators.isNull:
-        case Api.FilterOperators.isNotNull: fieldCondition[key] = new ClientCondition(operator, undefined, columnType)
+        case FilterOperators.isEmpty:
+        case FilterOperators.isNotEmpty:
+        case FilterOperators.isNull:
+        case FilterOperators.isNotNull: fieldCondition[key] = new ClientCondition(operator, undefined, columnType)
             break
         default: throw new Error(`Operands expected for operator "${operator}"`)
       }
@@ -467,7 +466,7 @@ export class EntityService<Entity extends Object>{
     //fill pk-fields from filter
     for(let [key, condition] of Object.entries(this._filters.filters)){
       if (this.columnsMetadataMap.get(key as keyof Entity).primaryKeyNo){
-        var operand = (condition as ClientCondition).operandOf(Api.FilterOperators.equal)
+        var operand = (condition as ClientCondition).operandOf(FilterOperators.equal)
         if (operand)
           this._data[key] = operand
       } 
@@ -545,7 +544,7 @@ export class EntityService<Entity extends Object>{
     const savedFilter = this._filters.filters
     var fieldConditions : FieldConditions<Entity> = {}
     this.primaryKeys.forEach(key => 
-        fieldConditions[key] = new ClientCondition(Api.FilterOperators.equal, [this.data[key as string]], this.columnsMetadataMap.get(key).type))
+        fieldConditions[key] = new ClientCondition(FilterOperators.equal, [this.data[key as string]], this.columnsMetadataMap.get(key).type))
     this.setFilters(fieldConditions)
     var observable = this._get()
     .pipe( map( entity => isEmpty(entity) ? undefined : this.updateRecAndxRec(entity)) )       
@@ -665,7 +664,7 @@ export class EntityService<Entity extends Object>{
   }
   public rename(observer? : PartialObserver<UpdateResult>) : Observable<UpdateResult> {
     if (this.primaryKeys.filter(key => this._data[key] !== this._xData[key]).length){
-      var renamingRequest : Api.RenamingRequest<Entity> = { rec  : this.data, xRec : this._xData }
+      var renamingRequest : IRenamingRequest<Entity> = { rec  : this.data, xRec : this._xData }
       const obs = this._rename(renamingRequest)
         .pipe( map(entity => this.updateRecAndxRec(entity)) )
       if (observer) 
@@ -738,7 +737,7 @@ export class EntityService<Entity extends Object>{
     var url = `${this.restEndpoint}/${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
     return this.httpClient.post<UpdateResult>(url, JSON.stringify(entities))
   }
-  private _rename(renamingRequest : Api.RenamingRequest<Entity>) : Observable<Entity> {
+  private _rename(renamingRequest : IRenamingRequest<Entity>) : Observable<Entity> {
       var url = `${this.restEndpoint}/${this.lowerSingularName}rename/`;
 
       return this.httpClient.put<Entity>(url, JSON.stringify(renamingRequest))   

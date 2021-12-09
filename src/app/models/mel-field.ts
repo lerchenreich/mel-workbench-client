@@ -1,7 +1,6 @@
-import { FieldTypes } from 'mel-common/types'
-import { Table } from 'src/app/metadata/entities';
+import { FieldTypes, notBlank } from 'mel-common'
+import { Table } from '../metadata/entities';
 import { Column } from 'src/app/metadata/entities';
-import { notBlank } from 'mel-common/validation';
 import  * as V  from './field-validations';
 
 

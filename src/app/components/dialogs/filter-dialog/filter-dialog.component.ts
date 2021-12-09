@@ -4,8 +4,7 @@ import { FormControl, FormArray, ValidationErrors, FormGroup } from '@angular/fo
 import { TranslateService } from '@ngx-translate/core'
 import { isEmpty } from 'lodash'
 
-import { FieldTypes } from 'mel-common/types'
-import { FilterOperators} from'mel-common/api'
+import { FieldTypes, FilterOperators} from'mel-common'
 import { FilterExpressionControl } from '../../controls/filterExpressionControl'
 import { EntityMetadata} from '../../../metadata/entities';
 import { ClientFilters } from 'src/app/services/core/filters'
@@ -106,7 +105,7 @@ export class FilterDialogComponent {
     if (!fieldName?.length ) 
       fieldName = this.firstUnusedFieldName()
     if (fieldName?.length) {
-      const colMetadata = this.data.filters.columnsMetadata.get(fieldName as keyof Object)
+      const colMetadata = this.data.filters.fieldsMetadata.get(fieldName as keyof Object)
       if (colMetadata){ 
         if (!condition) condition = new ClientCondition(FilterOperators.cplx, [''], colMetadata.type) 
         condition.translateOptions = this.translateOptions(colMetadata.type, fieldName)
@@ -131,7 +130,7 @@ export class FilterDialogComponent {
   onFieldNameChange(newFieldName : string, index: number){
     const filterExpressionControl = this.filterExpressionControl(index)
     filterExpressionControl.reset()
-    const colMetadata = this.data.filters.columnsMetadata.get(newFieldName as keyof Object)
+    const colMetadata = this.data.filters.fieldsMetadata.get(newFieldName as keyof Object)
     filterExpressionControl.condition = new ClientCondition(FilterOperators.cplx, [''], colMetadata.type) 
     filterExpressionControl.condition.translateOptions = this.translateOptions(colMetadata.type, newFieldName)
   }

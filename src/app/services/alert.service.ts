@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
-import { ErrorCategories, IMelError } from 'mel-common/types'
+import { ErrorCategories, IMelError } from 'mel-common'
 
 
 export type AlertTypes = 'danger' | 'warning' | 'info'

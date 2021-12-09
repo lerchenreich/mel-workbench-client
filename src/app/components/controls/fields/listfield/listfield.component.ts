@@ -3,7 +3,7 @@ import { Component, HostListener, ElementRef, EventEmitter, Input, TemplateRef, 
 import { fromEvent, Subject } from 'rxjs';
 import { filter, switchMapTo, take} from 'rxjs/operators';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy'
-import { FieldTypes } from 'mel-common/types';
+import { FieldTypes } from 'mel-common';
 import { TranslateService } from '@ngx-translate/core';
 
 import { Field} from '../field';

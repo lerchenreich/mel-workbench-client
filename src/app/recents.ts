@@ -3,7 +3,7 @@ import { ClientConfig } from "./client.configs"
 import { MelCompanyService } from "./services/melservices"
 import { Observer } from "rxjs-compat"
 import { MelCompany } from "./models/mel-company"
-import { KeyPair } from 'mel-common/types'
+import { KeyPair } from 'mel-common'
 import { map } from 'rxjs/operators'
 
 const cookieRecentApps : string = `Mel-RecentApps` 

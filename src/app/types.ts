@@ -1,5 +1,4 @@
-import { ValidationFunc, BaseFieldMetadata } from "mel-common/types"
-import { ColumnMetadata } from 'mel-common/api'
+import { ValidationFunc, BaseFieldMetadata, ColumnMetadata } from 'mel-common'
 export declare type InputType = 'text' | 'text-area'
 export declare type InputSubType = 'text'|'email'|'number'|'password'|'tel'|'url'
 
@@ -43,6 +42,4 @@ export interface FieldMetadata<Entity> extends BaseFieldMetadata {
     hint? : string
   }
 }
-export class ColumnInfo extends ColumnMetadata {
-  PrimaryKeyNo? : number
-}
+export declare type  ColumnInfo = ColumnMetadata & { PrimaryKeyNo? : number }

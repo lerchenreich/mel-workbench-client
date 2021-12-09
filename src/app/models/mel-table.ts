@@ -1,8 +1,7 @@
 
-import { FieldTypes } from 'mel-common/types'
-import { Table, Column } from 'src/app/metadata/entities';
-import { notBlank, notTrue, notZero } from 'mel-common/validation';
-//import { Column } from 'src/app/metadata/entities';
+import { FieldTypes } from 'mel-common'
+import { Table, Column } from '../metadata/entities';
+import { notBlank, notTrue, notZero } from 'mel-common';
 
 @Table( {
   default : [ "Name",  "Domain", "Active","AppTable"],

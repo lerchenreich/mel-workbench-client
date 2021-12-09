@@ -1,16 +1,12 @@
 var pluralize = require('pluralize');
-
+import 'reflect-metadata'
 import * as moment from 'moment'
 import 'moment/locale/de'
 import { isBoolean } from 'lodash'
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin, Observable } from 'rxjs';
 
-import { FieldTypes, FieldClasstypes, ValidationFunc } from 'mel-common/types'
-import * as v from 'mel-common/validation';
-import { parseNumber, parseBoolean, parseDate, parseDateTime, parseTime } from 'mel-common/utils';
-
-
+import { FieldTypes, MelFieldClasses, ValidationFunc, parseNumber, parseBoolean, parseDate, parseDateTime, parseTime, validateInteger, validateDecimal, validateDate, validateDateTime, validateTime, validateBoolean, validationKey } from 'mel-common';
 import { DisplayedColumns, EntityTypes, FieldMetadata } from '../types'
 
 const ENTITY_METADATA_KEY = 'mel:entity'
@@ -177,7 +173,7 @@ function concatValidations(funcs: ValidationFunc<any>[], toConcat?: ValidationFu
 }
 
 export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<any>{
-  column.class = column.class || FieldClasstypes.Normal
+  column.class = column.class || MelFieldClasses.Normal
   column.editable = column.editable === undefined ? true : column.editable
   if (column.validators && column.validators.length)
     column.validators = column.validators.filter(validationFunc => validationFunc !== undefined )
@@ -202,7 +198,7 @@ export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<a
     case FieldTypes.Integer: {
       column.default = column.default || 0
       column.autocomplete = column.autocomplete || autocompleteInt
-      column.validators = concatValidations([v.validateInteger], column.validators)
+      column.validators = concatValidations([validateInteger], column.validators)
       column.apiToJavaType = column.apiToJavaType || apiToJavaInteger
       column.javaToApiType = column.javaToApiType || javaToApiInteger
       column.format = column.format || formatInteger;
@@ -213,7 +209,7 @@ export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<a
     case FieldTypes.Decimal: {
       column.default = column.default || 0
       column.autocomplete = column.autocomplete || autocompleteDec
-      column.validators = concatValidations([v.validateDecimal], column.validators)
+      column.validators = concatValidations([validateDecimal], column.validators)
       column.apiToJavaType = column.apiToJavaType || apiToJavaDecimal
       column.javaToApiType = column.javaToApiType || javaToApiDecimal
       column.format = column.format || formatDecimal;
@@ -224,7 +220,7 @@ export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<a
     case FieldTypes.Date: {
       column.default = column.default
       column.autocomplete = column.autocomplete || autocompleteDate
-      column.validators = concatValidations([v.validateDate], column.validators)
+      column.validators = concatValidations([validateDate], column.validators)
       column.apiToJavaType = column.apiToJavaType || apiToJavaDate
       column.javaToApiType = column.javaToApiType || javaToApiDate
       column.format = column.format || formatDate
@@ -235,7 +231,7 @@ export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<a
     case FieldTypes.DateTime: {
       column.default = column.default
       column.autocomplete = column.autocomplete || autocompleteDateTime
-      column.validators = concatValidations([v.validateDateTime], column.validators)
+      column.validators = concatValidations([validateDateTime], column.validators)
       column.apiToJavaType = column.apiToJavaType || apiToJavaDateTime
       column.javaToApiType = column.javaToApiType || javaToApiDateTime
       column.format = column.format || formatDateTime
@@ -246,7 +242,7 @@ export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<a
     case FieldTypes.Time: {
       column.default = column.default
       column.autocomplete = column.autocomplete || autocompleteTime
-      column.validators = concatValidations([v.validateTime], column.validators)
+      column.validators = concatValidations([validateTime], column.validators)
       column.apiToJavaType = column.apiToJavaType || apiToJavaTime
       column.javaToApiType = column.javaToApiType || javaToApiTime
       column.format = column.format || formatTime
@@ -256,7 +252,7 @@ export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<a
     }
     case FieldTypes.Boolean: {
       column.default = column.default || false
-      column.validators = concatValidations([v.validateBoolean], column.validators)
+      column.validators = concatValidations([validateBoolean], column.validators)
       column.apiToJavaType = column.apiToJavaType || apiToJavaBoolean
       column.javaToApiType = column.javaToApiType || javaToApiBoolean
       column.format = column.format || formatBoolean
@@ -428,7 +424,7 @@ function javaToApiCode(value: any): string | undefined {
   if (value !== undefined && value !== null) {
     if (typeof value === 'string')
       return value.toUpperCase()
-    else throw v.validationKey + 'String'
+    else throw validationKey + 'String'
   }
   return undefined
 }

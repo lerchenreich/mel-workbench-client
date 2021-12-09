@@ -1,8 +1,8 @@
 import { InjectionToken } from '@angular/core';
-import { ROOT_PATH, MASTER_PATH } from 'mel-common/api'
+import { ROOT_PATH, MASTER_PATH } from 'mel-common'
 import * as REST from './rest.config'
 
-/*
+
 export class ClientConfig  {
   constructor( private _host: string, private _port : number, public annotation : string ){
     this._rootEndpoint = `http://${_host}:${_port}`
@@ -26,10 +26,10 @@ export class ClientConfig  {
   public get port() : number { return this._port }
 
 }
-*/
+
 export const DEV_CONFIG : ClientConfig  = new ClientConfig(REST.devHost, REST.devPort, "[dev]" )
 export const TEST_CONFIG : ClientConfig = new ClientConfig(REST.testHost, REST.testPort, "[test]")
 export const PROD_CONFIG : ClientConfig = new ClientConfig(REST.prodHost, REST.prodPort, "")
 
-//export const CLIENT_CONFIG = new InjectionToken<ClientConfig>('client.config');
+export const CLIENT_CONFIG = new InjectionToken<ClientConfig>('client.config');
 

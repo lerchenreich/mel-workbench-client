@@ -1,13 +1,6 @@
 /*
 import 'moment/locale/de' 
 
-
-import { ApiFilters, FilterOperators, RequestOptions} from 'mel-common/types'
-import { IColumnMetadata } from 'mel-common/interfaces'
-import { FilterRange } from '../../types'
-import { ClientCondition, FieldConditions } from './filter-condition'
-
-export enum FilterGroups {show, lock}
 /**
  * Filters encapsulate FieldConditions an their methods to create, delete, reset and convert to friendly- and api-strings
  * The FieldCondition-Value is a Condition, which can be complex or simple. 
@@ -18,11 +11,8 @@ export enum FilterGroups {show, lock}
  */
 
 import { isEmpty } from 'lodash'
-import { ExpressionType } from 'mel-common/filter-expression'
-import { RecFilters } from "mel-common/filters"
+import { ExpressionType, RecFilters, QueryFilter, FilterOperators, QueryOptions, FieldTypes } from "mel-common"
 import { FieldMetadata } from "../../types"
-import { Filters, FilterOperators, RequestOptions } from "mel-common/api"
-import { FieldTypes } from "mel-common/types"
 import { ClientCondition } from "./filter-condition"
 
 /**
@@ -38,16 +28,6 @@ export class ClientFilters<Entity extends Object> extends RecFilters<Entity, Cli
     return new ClientCondition(op, ops, colType)
   }
 
-  /* not used
-  public static parse<Entity>(jsonToParse : string, columnsMetadata : Map<keyof Entity, IColumnMetadata<Entity>>) : RecFilters<Entity> {
-    var filters : RecFilters<Entity> = new RecFilters(columnsMetadata)
-    const filterObject = JSON.parse(jsonToParse)
-    Object.entries(filterObject).forEach( ([fieldName, value]) => {
-      filters.fieldFilters[fieldName] = new ClientCondition(FilterOperators.unknown, [value as string], columnsMetadata.get(fieldName as keyof Entity).type)
-    })   
-    return filters
-  }
-  */
   //getter, setter
    
   public get friendly() : string {
@@ -60,17 +40,17 @@ export class ClientFilters<Entity extends Object> extends RecFilters<Entity, Cli
     return filters
   }
   
-  public getRequestOptions() : RequestOptions<Entity> {
-    var options : RequestOptions<Entity> = {}
+  public getRequestOptions() : QueryOptions<Entity> {
+    var options : QueryOptions<Entity> = {}
     if (this.hasFilters) {
-      var fieldFilters : Filters<Entity> = {}
-      var flowFilters  : Filters<Entity> = {}
+      var fieldFilters : QueryFilter<Entity> = {}
+      var flowFilters  : QueryFilter<Entity> = {}
       Object.entries(this._filters).forEach( ([fieldName, condition]:[string, ClientCondition]) => {
         if (condition.hasExpressions){
           if (this.isNormalFilter(fieldName)) 
-            fieldFilters[fieldName] = condition.toApiFormat()
+            fieldFilters[fieldName] = condition.toQueryFormat()
           else if (this.isFlowFilter) 
-            flowFilters[fieldName] = condition.toApiFormat()
+            flowFilters[fieldName] = condition.toQueryFormat()
           else throw new Error()
         }
       })

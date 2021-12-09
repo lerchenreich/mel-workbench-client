@@ -1,4 +1,4 @@
-import { FieldTypes } from "mel-common/types"
+import { FieldTypes } from "mel-common"
 import { Column, Table } from "src/app/metadata/entities"
 
 

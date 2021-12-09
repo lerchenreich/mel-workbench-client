@@ -1,5 +1,5 @@
-import { FieldTypes } from "mel-common/types"
-import { Column, Table } from "src/app/metadata/entities"
+import { FieldTypes } from "mel-common"
+import { Column, Table } from "../metadata/entities"
 
 
 @Table()

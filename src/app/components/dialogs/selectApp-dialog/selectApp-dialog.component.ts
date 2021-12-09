@@ -7,7 +7,7 @@ import { AppServiceObserver, MasterServiceObserver, ServiceStates, WaitingFor} f
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AlertService } from 'src/app/services/alert.service';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { KeyPair } from 'mel-common/types';
+import { KeyPair } from 'mel-common';
 
 export const createAppCommand = "__createApp__"
 

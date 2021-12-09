@@ -1,7 +1,6 @@
 import { FormControl, ValidationErrors, ValidatorFn, AbstractControlOptions, AsyncValidatorFn } from '@angular/forms'
 
-import { FieldTypes} from'mel-common/types'
-import { FilterOperators} from'mel-common/api'
+import { FieldTypes, FilterOperators} from'mel-common'
 import { ClientCondition } from 'src/app/services/core/filter-condition'
 
 export class FilterExpressionControl extends FormControl {

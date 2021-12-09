@@ -9,11 +9,9 @@ import { OpenDialogOptions, OpenDialogReturnValue } from 'electron/renderer'
 import JSZip from 'jszip';
 import { ElectronService } from 'ngx-electron';
 
-import { CreateServerOptions} from 'mel-common/api';
-import { FieldTypes } from 'mel-common/types'
+import { CreateServerProjectOptions, notBlank , FieldTypes } from 'mel-common'
 import { ClientConfig, CLIENT_CONFIG } from 'src/app/client.configs';
 import { fillColumnMetadata } from 'src/app/metadata/entities';
-import { notBlank } from 'mel-common/validation';
 import { AlertService } from 'src/app/services/alert.service';
 import { AppService } from 'src/app/services/app-service';
 import { CardData } from '../core/page-data';
@@ -106,9 +104,15 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
           await this.eSvc.ipcRenderer.invoke('fs-dir','mk', projectFolder)
         }
         // get the current serverproject
-        const options : CreateServerOptions = {
+        const options : CreateServerProjectOptions = {
           name : this.cardData.validationRec.name,
           version : this.cardData.validationRec.version,
+          keywords : ['server'],
+          author: 'a.berger',
+          license : 'MIT',
+          serverPort : 4711,
+          databaseConfiguration : { host : '192.168.0.108', port : 3345, username : 'root', password : '1', database : '' },
+          databaseType : 'mysql',
           description : this.cardData.validationRec.description,
         }
         var modalRef = this.modalService.open(ModalWaitComponent, {centered : true})

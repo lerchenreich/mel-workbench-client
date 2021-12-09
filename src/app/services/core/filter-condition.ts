@@ -5,12 +5,7 @@ import { isEmpty } from 'lodash'
 import { TranslateService } from '@ngx-translate/core'
 import { ValidationErrors } from '@angular/forms'
 
-import { Condition } from 'mel-common/filter-conditions'
-import { ExpressionType } from 'mel-common/filter-expression'
-import { Replace } from 'mel-common/utils'
-import { Condition as ApiCondition, FilterOperators } from 'mel-common/api'
-import { FieldTypes} from 'mel-common/types'
-
+import { FilterCondition, ExpressionType, Replace, IQueryCondition, FilterOperators , FieldTypes} from 'mel-common'
 
 import { ClientExpression } from './filter-expression'
 
@@ -19,7 +14,7 @@ export interface ITranslateOptions {
   path : string
   service : TranslateService
 }
-export class ClientCondition extends Condition<ClientExpression> {
+export class ClientCondition extends FilterCondition<ClientExpression> {
 
     constructor(operator : FilterOperators, operands : ExpressionType[], columnType : FieldTypes, private _translateOptions? : ITranslateOptions){
       super(operator, operands, columnType)
@@ -34,17 +29,17 @@ export class ClientCondition extends Condition<ClientExpression> {
     /**
      * Formats the condition into an api-conform Where-condition
      */
-    public toApiFormat() : ApiCondition {     
+    public toQueryFormat() : IQueryCondition {     
       if (this.isComplex) {
         var complexCondition : string = this._complexInput 
         for(let expression of this._expressions){
-          const apiCondition = expression.apiCondition
+          const apiCondition = expression.queryCondition
           complexCondition = complexCondition.replace(expression.input, `${apiCondition.op} ${apiCondition.opd.join(',')}` )
         }
         return { op : FilterOperators.cplx, opd : [complexCondition] }
       }
   
-      return this._expressions[0].apiCondition
+      return this._expressions[0].queryCondition
     }
   
     public setFriendly() : string {

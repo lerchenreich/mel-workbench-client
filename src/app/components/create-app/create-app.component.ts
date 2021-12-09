@@ -2,9 +2,7 @@ import { AfterViewInit, Component, Inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs'
-import { FieldTypes, KeyPair } from 'mel-common/types';
-import { CreateAppOptions } from 'mel-common/api';
-import { notBlank } from 'mel-common/validation';
+import { FieldTypes, KeyPair, CreateAppOptions, notBlank, Version } from 'mel-common';
 import { fillColumnMetadata } from 'src/app/metadata/entities';
 import { AlertService } from 'src/app/services/alert.service';
 import { AppService } from 'src/app/services/app-service';
@@ -98,14 +96,15 @@ export class CreateAppComponent implements AfterViewInit {
     .then( valid => {
       if (valid){
         const options : CreateAppOptions = {
-          dropExisting : true,
+          dropExistingAppDatabase : true,
           appCode : this.cardData.validationRec.appCode,
           appName : this.cardData.validationRec.appName,
+          version : new Version(1,0,0),
           company : { 
             name : this.cardData.validationRec.companyName,
             dbName : this.cardData.validationRec.companyDatabaseName,
-            version : '1.0.0'
-          }
+           
+          },
         }
         var modalRef = this.modalService.open(ModalWaitComponent, {centered : true})
         modalRef.componentInstance.title = 'CreateApp.Title'

@@ -4,10 +4,8 @@ import { Observable } from 'rxjs';
 
 import { ClientConfig, CLIENT_CONFIG} from '../client.configs';
 import { AppMethods, CreateAppOptions, CreateCompanyOptions, GetTablesMetadataOptions, GetTablesOptions, 
-  MasterMethods,  DbTableRelation,  UpdateMetadataOptions, CreateServerOptions, CreateClientOptions} from 'mel-common/api'
-import { deepCopy } from 'mel-common/utils';
-import { KeyPair } from 'mel-common/types'
-import { TableMetadata } from 'mel-common/api'
+  MasterMethods,  DbTableRelation,  UpdateMetadataOptions, CreateServerProjectOptions, CreateClientProjectOptions} from 'mel-common'
+import { deepCopy, KeyPair, TableMetadata } from 'mel-common'
 @Injectable({
   providedIn: 'root'
 })
@@ -39,13 +37,13 @@ export class AppService {
     var url = `${this.config.restAppEndpoint}/${AppMethods.CreateCompany}/${this.getOptionsQueryParam(options)}`
     return this.httpClient.get<void>(url)
   }
-  public createServer(options : CreateServerOptions) : Observable<string> {
-    var url = `${this.config.restAppEndpoint}/${AppMethods.CreateServer}/${this.getOptionsQueryParam(options)}`
+  public createServer(options : CreateServerProjectOptions) : Observable<string> {
+    var url = `${this.config.restAppEndpoint}/${MasterMethods.CreateServerProject}/${this.getOptionsQueryParam(options)}`
     return this.httpClient.get<string>(url)
   }
 
-  public createClient(options : CreateClientOptions) : Observable<ReadableStream> {
-    var url = `${this.config.restAppEndpoint}/${AppMethods.CreateClient}/${this.getOptionsQueryParam(options)}`
+  public createClient(options : CreateClientProjectOptions) : Observable<ReadableStream> {
+    var url = `${this.config.restAppEndpoint}/${MasterMethods.CreateClientProject}/${this.getOptionsQueryParam(options)}`
     return this.httpClient.get<ReadableStream>(url)
   }
 
