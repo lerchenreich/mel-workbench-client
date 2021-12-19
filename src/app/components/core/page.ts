@@ -1,22 +1,22 @@
 import { Observable, PartialObserver} from 'rxjs'
 import { map} from 'rxjs/operators'
-import { Injector, Directive, EventEmitter, AfterViewInit, OnDestroy, Input } from '@angular/core'
+import { Injector, Directive, EventEmitter, AfterViewInit, OnDestroy, Input, ProviderToken } from '@angular/core'
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog'
 import { MatSnackBar } from '@angular/material/snack-bar'
 import { TranslateService } from '@ngx-translate/core'
 
 import { DeleteResult, EntityService, UpdateResult } from '../../services/core/entityService'
-import { FieldConditions, ClientCondition } from '../../services/core/filter-condition'
+import { FieldConditions, ClientFilterCondition } from '../../services/core/client-filter-condition'
 import { FilterDialogComponent, IFilterDialogData } from '../dialogs/filter-dialog/filter-dialog.component'
 import { SortOrder } from 'mel-common'
-import { ClientFilters } from 'src/app/services/core/filters'
+import { ClientFilters } from 'src/app/services/core/client-filters'
 import { AlertService } from 'src/app/services/alert.service'
-import { getModulProviderToken } from 'src/app/core'
+import { CLIENT_MODUL_NAME, getModulProviderToken } from 'src/app/core'
 import { HttpErrorResponse } from '@angular/common/http'
 import { DialogButtons, MessageDialogComponent, MessageResults } from '../dialogs/message-dialog/message-dialog.component'
 import { EntityMetadata} from 'src/app/metadata/entities'
 import { PageModes, PageTypes } from './types'
-import { FieldMetadata } from '../../types'
+import { FieldsMdMap, FieldMetadata, EntityLiteral, EntityListLiteral } from '../../types'
 export class Permissions {
   private i : boolean = false
   private m : boolean = false
@@ -85,7 +85,7 @@ export interface IPagemodeChanged { newMode : PageModes, prevMode? :PageModes}
  * 
  * */
 @Directive()
-export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
+export abstract class Page<Entity extends EntityLiteral> implements  AfterViewInit, OnDestroy {
  
   protected abstract retrieveData() : void
   protected abstract deleteData() : void
@@ -96,64 +96,79 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
   abstract get title() : string
     
   public alertService : AlertService
-  private _pageType : PageTypes
-  private _entityName : string
-  protected _entityMetadata : EntityMetadata<Entity>
-  protected _recService : EntityService<Entity>
+  private _pageType? : PageTypes
+  private _entityName? : string
+  protected _entityMetadata? : EntityMetadata
+  protected _recService? : EntityService<EntityLiteral>
   
   actionkeyEmitterMap : Map<string, EventEmitter<KeyboardEvent>> // toDo: implemetieren oder wegwerfen
   pagemodeChanged = new EventEmitter<IPagemodeChanged>()
  
   constructor(protected injector : Injector, private _translate : TranslateService, 
               protected dialog : MatDialog, protected snackBar: MatSnackBar ){
-    this.alertService = injector.get(getModulProviderToken('AlertService') ) 
+    const token = getModulProviderToken('AlertService', CLIENT_MODUL_NAME) as ProviderToken<any>
+    this.alertService = injector.get(token) 
     this.alertService.allClosed$.subscribe({
       next : x => this.resetPageMode()
     })
     this.accessRights = ''
     this.actionkeyEmitterMap = new Map<string, EventEmitter<KeyboardEvent>>() 
   }
-  public get hasRecService() : boolean { return this._recService !== undefined }
-  public get translate() : TranslateService { return this._translate }
+  get hasRecService() : boolean { return this._recService !== undefined }
+  protected get assertRecService() : EntityService<EntityLiteral> { if (this._recService) return this._recService; throw new Error('_recservice undefined!')}
+  get translate() : TranslateService { return this._translate }
 
   set pageType(t : PageTypes) { this._pageType = t }
-  get isCard() : boolean      { return this._pageType === PageTypes.CardPart || this._pageType === PageTypes.Card;}
-  get isList() : boolean      { return this._pageType === PageTypes.ListPart || this._pageType === PageTypes.List }
-  get isPart() : boolean      { return this._pageType === PageTypes.CardPart || this._pageType === PageTypes.ListPart;}
-  get isListPart() : boolean  { return this._pageType === PageTypes.ListPart }
-  get isRoutedList() : boolean  { return this._pageType === PageTypes.List }
+  get isCard()        : boolean  { return this._pageType === PageTypes.CardPart || this._pageType === PageTypes.Card;}
+  get isList()        : boolean  { return this._pageType === PageTypes.ListPart || this._pageType === PageTypes.List }
+  get isPart()        : boolean  { return this._pageType === PageTypes.CardPart || this._pageType === PageTypes.ListPart;}
+  get isListPart()    : boolean  { return this._pageType === PageTypes.ListPart }
+  get isRoutedList()  : boolean  { return this._pageType === PageTypes.List }
 
-  get listRoute() : string { return `/${this.entitySingularName.toLowerCase()}-list` }
-  get cardRoute() : string { return `/${this.entitySingularName.toLowerCase()}-card` }
+  get listRoute() : string { return `/${this.entitySingularName?.toLowerCase()}-list` }
+  get cardRoute() : string { return `/${this.entitySingularName?.toLowerCase()}-card` }
 
-  protected get caption() : string {   return this.isCard? this.entityMetadata.captionSingular : this.entityMetadata.captionPlural}
+  protected get caption() : string {   return this.isCard? this.entityMetadata?.captionSingular||'' : this.entityMetadata?.captionPlural ||''}
   protected afterDeleteEntity(){}
   protected afterModifyEntity(){}
   protected afterInsertEntity(){}
   protected afterRenameEntity(){}
 
-  get entityName():string { return this._entityName }
-  get entityMetadata() : EntityMetadata<Entity> { return this._entityMetadata }
-  get entitySingularName() : string   { return this._entityMetadata.name}
-  get entityPluralName() : string     { return this._entityMetadata.pluralName}
-  get entityPrimaryKeys(): (keyof Entity)[]   { return this._entityMetadata.primaryKeys}
-  get columnsMap() : Map<keyof Entity, FieldMetadata<Entity>> { return this._entityMetadata.columnsMap }
+  get entityName():string | undefined { return this._entityName }
+  set entityName(funcName : string|undefined){
+    if (!this.entityName && funcName){
+      this._entityName = funcName
+      this._entityMetadata = EntityMetadata.assertGet(funcName)
+      this._recService = EntityService.create(this.injector, this._entityName)
+    }
+  }
+  get entityMetadata()    : EntityMetadata|undefined { return this._entityMetadata }
+  get entitySingularName(): string { return this._entityMetadata?.name || ''}
+  get entityPluralName()  : string     { return this._entityMetadata?.pluralName || ''}
+  get primaryKeys()       : string[]   { return this._entityMetadata?.primaryKeys || []}
+  get fieldsMdMap()       : FieldsMdMap |undefined { return this._entityMetadata?.fieldsMdMap }
+  get assertFieldsMdMap() : FieldsMdMap { if (this.fieldsMdMap) return this.fieldsMdMap; throw new Error('fieldsMap undefined!')}
+  assertGetFieldMd(key : string) : FieldMetadata<Entity>{
+    const fieldMd = this.fieldsMdMap?.get(key)
+    if (fieldMd) 
+      return fieldMd
+    throw new Error(`Metadata for field "${key}" not found`)
+  }
 
-  private _viewFilters : ClientFilters<Entity>
-  protected get viewFilters() : ClientFilters<Entity> { return this._viewFilters }
-  protected set viewFilters(newFilter : ClientFilters<Entity>) { this._viewFilters = newFilter}
+  protected viewFilters? : ClientFilters<Entity>
   
-  private _permissions : Permissions
+  private _permissions? : Permissions
   set accessRights(accessString : string){ 
     this._permissions = new Permissions(accessString) 
   }
-  @Input() set permissions(perm : Permissions) { this._permissions = perm}
-  get permissions() : Permissions { return this._permissions}
+  @Input() 
+  set permissions(perm : Permissions | undefined ) { this._permissions = perm}
+  get permissions() : Permissions | undefined{ return this._permissions}
   public locked : boolean = false
 
-  get insertPermission() : boolean { return this._permissions.insert } 
-  get modifyPermission() : boolean { return this._permissions.modify }
-  get deletePermission() : boolean { return this._permissions.delete }
+  get insertPermission() : boolean { return this._permissions?.insert || false } 
+  get modifyPermission() : boolean { return this._permissions?.modify || false }
+  get deletePermission() : boolean { return this._permissions?.delete || false }
   get insertAllowed() : boolean { return !this.locked && this.insertPermission }
   get modifyAllowed() : boolean { return !this.locked && this.modifyPermission }
   get deleteAllowed() : boolean { return !this.locked && this.deletePermission }
@@ -161,19 +176,13 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
   get canInsert() : boolean { return this.insertAllowed  && !this.isErrorMode && !this.isInsertMode}
 
  
-  protected mode : PageModes
+  protected mode : PageModes = PageModes.None
   get isViewMode():boolean    { return this.mode === PageModes.View }
   get isEditMode():boolean    { return this.mode === PageModes.Edit }
   get isInsertMode():boolean  { return this.mode === PageModes.Insert }
   get isErrorMode():boolean   { return this.mode === PageModes.Error }
 
-  set entityName(funcName : string){
-    if (!this.entityName){
-      this._entityName = funcName
-      this._entityMetadata = EntityMetadata.get(funcName)
-      this._recService = EntityService.create(this.injector, this._entityName)
-    }
-  }
+ 
 
   /**
    * Angular Hooks
@@ -185,7 +194,7 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
       htmlCollection[0].remove()
   }
   ngOnDestroy() {
-    this._recService?.unsubscribe()
+    this.assertRecService?.unsubscribe()
   }
 
  
@@ -258,33 +267,33 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
   }
       
   protected handleServerError(error : HttpErrorResponse| Error) : void {
-    var message : string
-    if (!error) throw new Error('FATAL! Error is undefined') 
+    var message : string 
     if (error instanceof HttpErrorResponse) {
-      if (error.status != 500 || !error.error)
+      if (error.status < 500 || !error.error)
         message = error.statusText
       else {
         if (typeof error.error === 'string')
           message = error.error
         else {
-          if (typeof error.error === 'object'){
-            message = error.error.name === 'MelError' ? error.error.message : JSON.stringify(error.error)
-          }
+          message = (typeof error.error === 'object')?
+            error.error.name === 'MelError' ? error.error.message : JSON.stringify(error.error) :
+            message = 'Unknown Error'
         }
       }
-      this.alertError(message)
-      return
     }
-    if (error instanceof Error)
-      this.translate.get(error.message).subscribe( msg => this.alertError(msg))
     else {
-      message = 'FATAL! unexpected error: ' + JSON.stringify(error) 
-      this.alertError(message)
+      if (error instanceof Error){
+        this.translate.get(error.message).subscribe( msg => this.alertError(msg))
+        return 
+      }
+      else 
+        message = 'FATAL! unexpected error: ' + JSON.stringify(error)  
     }
+    this.alertError(message)
   }
 
   fieldCaption(fieldName : string){
-    return this.columnsMap.get(fieldName as keyof Entity)?.display.caption
+    return this.assertGetFieldMd(fieldName).display?.caption
   }
 
 
@@ -338,7 +347,7 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
   //#region Actions
 
   afterFilterChanged() {  
-    if (!this._recService) 
+    if (!this.assertRecService) 
       return 
     this.retrieveData()
   }
@@ -347,7 +356,7 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
    * @param event 
    */
   runFilterDialog(event:any){
-    var filterData : IFilterDialogData<Entity> = {
+    var filterData : IFilterDialogData = {
       entityName : this.entitySingularName,
       filters : this.getNormalFilters(false) // not locked filters
     }
@@ -364,7 +373,7 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
   }
 
   runFlowFilterDialog(event:any){
-    var filterData : IFilterDialogData<Entity>= {
+    var filterData : IFilterDialogData= {
       entityName : this.entitySingularName,
       filters : this.getFlowFilters(),
       useFlowfilters : true
@@ -394,59 +403,59 @@ export abstract class Page<Entity> implements  AfterViewInit, OnDestroy {
 
   //#region databaseservice-functions
    // data
-  public copyData(from : EntityService<Entity>) : EntityService<Entity> { return this._recService.copyData(from) }
-  public copyDataset(from : EntityService<Entity>) : EntityService<Entity> {return this._recService.copyDataset(from) }
-  public copy(from : EntityService<Entity>) : EntityService<Entity> { return this._recService.copy(from) }
-  public get rec()  : Entity { return this._recService?.data }   
-  public get xRec() : Entity { return this._recService?.xData }
-  public get recordSet() : Entity[] { return this._recService?.dataSet }
-  public setRecordSet(set : Entity[]) { this._recService.dataSet = set}
-  public getPrimaryKeyFields() : Partial<Entity> { return this._recService.primaryKeyFields() }
+  public copyData(from : EntityService<EntityLiteral>) : EntityService<EntityLiteral> { return this.assertRecService.copyData(from)}
+  public copyDataset(from : EntityService<EntityLiteral>) : EntityService<EntityLiteral> {return this.assertRecService.copyDataset(from) }
+  public copy(from : EntityService<EntityLiteral>) : EntityService<EntityLiteral> { return this.assertRecService.copy(from) }
+  public get rec()  : EntityLiteral { return this.assertRecService?.data }   
+  public get xRec() : EntityLiteral { return this.assertRecService?.xData }
+  public get recordSet() : EntityLiteral[] { return this.assertRecService?.dataSet || []}
+  public setRecordSet(set : EntityLiteral[]) { this.assertRecService.dataSet = set}
+  public get primaryKeyFields() : EntityLiteral { return this.assertRecService.primaryKeyFields}
   // filter
-  public get hasFilters() : boolean { return this._recService?.hasFilters }
-  public get hasFlowFilters() : boolean { return this._recService?.hasFlowFilters }
-  public get hasActiveFlowFilters() : boolean { return this._recService?.hasActiveFlowFilters }
-  public get hasUnlockedFilters() : boolean { return this._recService?.hasUnlockedFilters }
-  public get fiendlyFilters() : string { return this._recService?.friendlyFilters }
-  public setRange(fieldName: keyof Entity, range? : any) : EntityService<Entity>{ return this._recService.setRange(fieldName, range) }
-  public setFilter(fieldName: keyof Entity, condition: ClientCondition | string) : EntityService<Entity>{ return this._recService.setFilter(fieldName, condition) }
-  public setFilters(fieldConditions : FieldConditions<Entity>):EntityService<Entity>{return this._recService.setFilters(fieldConditions) }
-  public setNormalFilters(fieldConditions : FieldConditions<Entity>):EntityService<Entity>{return this._recService.setNormalFilters(fieldConditions) }
-  public setFlowFilters(fieldConditions : FieldConditions<Entity>):EntityService<Entity>{return this._recService.setFlowFilters(fieldConditions)}
-  public mergeFilters(filters : ClientFilters<Entity>, overwrite : boolean = false):EntityService<Entity>{return this._recService.mergeFilters(filters, overwrite)}
-  public setParameter(param : string | string[] | undefined):EntityService<Entity>{return this._recService.setParameter(param)}
-  public addParameter(param : string | string[] | undefined):EntityService<Entity>{return this._recService.addParameter(param) }
+  public get hasFilters() : boolean { return this.assertRecService.hasFilters }
+  public get hasFlowFilters() : boolean { return this.assertRecService.hasFlowFilters }
+  public get hasActiveFlowFilters() : boolean { return this.assertRecService.hasActiveFlowFilters }
+  public get hasUnlockedFilters() : boolean { return this.assertRecService.hasUnlockedFilters }
+  public get fiendlyFilters() : string { return this.assertRecService.friendlyFilters }
+  public setRange(fieldName:string, range? : any) : EntityService<EntityLiteral>{ return this.assertRecService.setRange(fieldName, range) }
+  public setFilter(fieldName: string, condition: ClientFilterCondition | string) : EntityService<EntityLiteral>{ return this.assertRecService.setFilter(fieldName, condition) }
+  public setFilters(fieldConditions : FieldConditions<Entity>):EntityService<EntityLiteral>{return this.assertRecService.setFilters(fieldConditions) }
+  public setNormalFilters(fieldConditions : FieldConditions<Entity>):EntityService<EntityLiteral>{return this.assertRecService.setNormalFilters(fieldConditions) }
+  public setFlowFilters(fieldConditions : FieldConditions<Entity>):EntityService<EntityLiteral>{return this.assertRecService.setFlowFilters(fieldConditions)}
+  public mergeFilters(filters : ClientFilters<EntityLiteral>, overwrite : boolean = false):EntityService<EntityLiteral>{return this.assertRecService.mergeFilters(filters, overwrite)}
+  public setParameter(param : string | string[] | undefined):EntityService<EntityLiteral>{return this.assertRecService.setParameter(param)}
+  public addParameter(param : string | string[] | undefined):EntityService<EntityLiteral>{return this.assertRecService.addParameter(param) }
 
-  public resetAll() :EntityService<Entity>{ return this._recService.resetAll() }
-  public lockFilters(toLock : string | string[])  : EntityService<Entity> { return this._recService.lockFilters(toLock) }
-  public copyFilters(from : EntityService<Entity>) : EntityService<Entity> { return this._recService.copyFilters(from) }
-  public copyNormalFilters(from : EntityService<Entity>, includeLocked : boolean = true) : EntityService<Entity> {return this._recService.copyNormalFilters(from, includeLocked) }
-  public copyFlowFilters(from : EntityService<Entity>, includeLocked : boolean = true) : EntityService<Entity> { return this._recService.copyFlowFilters(from, includeLocked) }
-  public getNormalFilters(includeLocked : boolean = true) : ClientFilters<Entity>{ return this._recService.getNormalFilters(includeLocked) }
-  public getFlowFilters() : ClientFilters<Entity>{ return this._recService.getFlowFilters() }
-  public resetNormalFilters() : EntityService<Entity>{ return this._recService.resetNormalFilters() }
-  public resetFlowFilters() : EntityService<Entity>{ return this._recService.resetFlowFilters() }
-  public resetFilters()  :EntityService<Entity>{ return this._recService.resetFilters() }
-  public clearFilters()  :EntityService<Entity>{ return this._recService.clearFilters() }
+  public resetAll() :EntityService<EntityLiteral>{ return this.assertRecService.resetAll() }
+  public lockFilters(toLock : string | string[])  : EntityService<EntityLiteral> { return this.assertRecService.lockFilters(toLock) }
+  public copyFilters(from : EntityService<EntityLiteral>) : EntityService<EntityLiteral> { return this.assertRecService.copyFilters(from) }
+  public copyNormalFilters(from : EntityService<EntityLiteral>, includeLocked : boolean = true) : EntityService<EntityLiteral> {return this.assertRecService.copyNormalFilters(from, includeLocked) }
+  public copyFlowFilters(from : EntityService<EntityLiteral>, includeLocked : boolean = true) : EntityService<EntityLiteral> { return this.assertRecService.copyFlowFilters(from, includeLocked) }
+  public getNormalFilters(includeLocked : boolean = true) : ClientFilters<EntityLiteral>{ return this.assertRecService.getNormalFilters(includeLocked) }
+  public getFlowFilters() : ClientFilters<EntityLiteral>{ return this.assertRecService.getFlowFilters() }
+  public resetNormalFilters() : EntityService<EntityLiteral>{ return this.assertRecService.resetNormalFilters() }
+  public resetFlowFilters() : EntityService<EntityLiteral>{ return this.assertRecService.resetFlowFilters() }
+  public resetFilters()  :EntityService<EntityLiteral>{ return this.assertRecService.resetFilters() }
+  public clearFilters()  :EntityService<EntityLiteral>{ return this.assertRecService.clearFilters() }
   // database  
-  public select(fieldNames :(keyof Entity )[]) : EntityService<Entity> { return this._recService.select(fieldNames) }
-  public setOrder(sortOrder : SortOrder<Entity> | undefined ) : EntityService<Entity>{ return this._recService.setOrder(sortOrder)}
-  public setCalcFields(calcFieldNames : (keyof Entity)[]) : EntityService<Entity>{ return this._recService.setCalcFields(calcFieldNames) }
-  public take(n : number | undefined) :EntityService<Entity>{return this._recService.take(n) }
-  public skip( n : number | undefined) :EntityService<Entity> { return this._recService.skip( n )}
+  public select(fieldNames :string[]) : EntityService<EntityLiteral> { return this.assertRecService.select(fieldNames) }
+  public setOrder(order : SortOrder<Entity> | undefined ) : EntityService<EntityLiteral>{ return this.assertRecService.setOrder(order) }
+  public setCalcFields(calcFieldNames : string[]) : EntityService<EntityLiteral>{ return this.assertRecService.setCalcFields(calcFieldNames) }
+  public take(n : number ) :EntityService<EntityLiteral> {return this.assertRecService.take(n) }
+  public skip( n : number) :EntityService<EntityLiteral> { return this.assertRecService.skip( n )}
   // operations
-  public count(observer?:PartialObserver<number>) : Observable<number> | undefined { return this._recService.count(observer) }
-  public get(observers? : PartialObserver<Entity>[] ) : Observable<Entity> | undefined{ return this._recService.get(observers) }
-  public findFirst(observers? : PartialObserver<Entity>[]): Observable<Entity> | undefined { return this._recService.findFirst(observers) }
-  public findLast(observers? : PartialObserver<Entity>[]) : Observable<Entity> | undefined { return this._recService.findLast(observers) }
-  public findMany(observers? : PartialObserver<Entity[]>[]) : Observable<Entity[]> | undefined  { return this._recService.findMany(observers) }
-  public calcFields(fieldsToCalculate : string[], observer? : PartialObserver<Entity>) : Observable<Entity>{ return this._recService.calcFields(fieldsToCalculate) }
-  public insert(observer? : PartialObserver<Entity>) : Observable<Entity>{ return this._recService.insert(observer) }
-  public rename(observer? : PartialObserver<UpdateResult>) : Observable<UpdateResult> { return this._recService.rename(observer) }
-  public update(observer?: PartialObserver<Entity>) : Observable<Entity> { return this._recService.update(observer) }
-  public updateMany(observer?: PartialObserver<UpdateResult>) : Observable<UpdateResult> { return this._recService.updateMany(observer) }
-  public delete(observer?:PartialObserver<DeleteResult>) : Observable<DeleteResult> { return this._recService.delete(observer) }
-  public deleteMany(observer?: PartialObserver<DeleteResult>) : Observable<DeleteResult>{ return this._recService.deleteMany(observer) }
+  public count(observer?:PartialObserver<number>)           : Observable<number> { return this.assertRecService.count(observer) }
+  public get(observers? : PartialObserver<EntityLiteral>[] )       : Observable<EntityLiteral> { return this.assertRecService.get(observers) }
+  public findFirst(observers? : PartialObserver<EntityLiteral>[])  : Observable<EntityLiteral> { return this.assertRecService.findFirst(observers) }
+  public findLast(observers? : PartialObserver<EntityLiteral>[])   : Observable<EntityLiteral> { return this.assertRecService.findLast(observers) }
+  public findMany(observers? : PartialObserver<EntityLiteral[]>[]) : Observable<EntityLiteral[]> { return this.assertRecService.findMany(observers) }
+  public calcFields(fieldsToCalculate : string[], observer? : PartialObserver<EntityLiteral>) : Observable<EntityLiteral>{ return this.assertRecService.calcFields(fieldsToCalculate, observer) }
+  public insert(observer? : PartialObserver<EntityLiteral>)          : Observable<EntityLiteral>{ return this.assertRecService.insert(observer) }
+  public rename(observer? : PartialObserver<UpdateResult>)    : Observable<UpdateResult> { return this.assertRecService.rename(observer) }
+  public update(observer?: PartialObserver<EntityLiteral>)    : Observable<EntityLiteral> { return this.assertRecService.update(observer) }
+  public updateMany(observer?: PartialObserver<UpdateResult>) : Observable<UpdateResult> { return this.assertRecService.updateMany(observer) }
+  public delete(observer?:PartialObserver<DeleteResult>)      : Observable<DeleteResult> { return this.assertRecService.delete(observer) }
+  public deleteMany(observer?: PartialObserver<DeleteResult>) : Observable<DeleteResult>{ return this.assertRecService.deleteMany(observer) }
 
 //#endregion record-functions
 

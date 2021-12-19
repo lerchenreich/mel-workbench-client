@@ -6,8 +6,12 @@ import { isBoolean } from 'lodash'
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin, Observable } from 'rxjs';
 
-import { FieldTypes, MelFieldClasses, ValidationFunc, parseNumber, parseBoolean, parseDate, parseDateTime, parseTime, validateInteger, validateDecimal, validateDate, validateDateTime, validateTime, validateBoolean, validationKey } from 'mel-common';
-import { DisplayedColumns, EntityTypes, FieldMetadata } from '../types'
+import { FieldTypes, MelFieldClasses, ValidationFunc, 
+         parseNumber, parseBoolean, parseDate, parseDateTime, parseTime, 
+         validateInteger, validateDecimal, validateDate, validateDateTime, 
+         validateTime, validateBoolean, validationKey } from 'mel-common';
+         
+import { DisplayedFields, EntityLiteral, EntityTypes, FieldsMdMap, FieldMetadata } from '../types'
 
 const ENTITY_METADATA_KEY = 'mel:entity'
 const COLUMN_METADATA_KEY = 'mel:column'
@@ -21,7 +25,7 @@ export declare type ColumnTableRelation<Entity> = {
   condition?: { [P in keyof Entity]?: any }
 }
 */
-export class EntityMetadata<Entity> {
+export class EntityMetadata {
   //private static readonly
   readonly name: string
   readonly pluralName: string
@@ -29,28 +33,36 @@ export class EntityMetadata<Entity> {
   type: EntityTypes
   captionSingular?: string
   captionPlural?: string
-  primaryKeys: (keyof Entity)[] = []
-  columnsMap: Map<keyof Entity, FieldMetadata<Entity>> = new Map<keyof Entity, FieldMetadata<Entity>>()
-  _displayedColumns : DisplayedColumns<Entity>
-  get displayedColumns() : DisplayedColumns<Entity> { 
-    if (!this._displayedColumns){
-      const allColumns = Array.from(this.columnsMap.keys()).filter(name => name !== 'timestamp')
-      this._displayedColumns = {
-        part : allColumns, 
-        lookup : allColumns,
-        default : allColumns
-      }
-    }
-    return this._displayedColumns
-  }
-  constructor(target: Function, type: EntityTypes = EntityTypes.unknown, displayedColumns? : DisplayedColumns<Entity>) {
+  primaryKeys: string[] = []
+  fieldsMdMap : FieldsMdMap = new Map<string, FieldMetadata<EntityLiteral>>()
+  
+  constructor(target: Function, type: EntityTypes = EntityTypes.unknown, private _displayedFields? : DisplayedFields) {
     this.target = target
     this.name = target.name
     this.type = type
     const plural = pluralize(this.name)
     this.pluralName = plural === this.name ? plural + 's' : plural
-    this._displayedColumns = displayedColumns
+   
   }
+  assertGetField(fieldName : string) : FieldMetadata<EntityLiteral>{
+    const md = this.fieldsMdMap.get(fieldName)
+    if (md)
+      return md
+    throw new Error(`Fieldmetadata of field "${fieldName} is undefined`)
+  }
+  get displayedFields() : DisplayedFields { 
+    if (!this._displayedFields){
+      const allFields = Array.from(this.fieldsMdMap.keys()).filter(name => name !== 'timestamp')
+      this._displayedFields = {
+        part    : allFields as string[], 
+        lookup  : allFields as string[],
+        default : allFields as string[]
+      }
+    }
+    return this._displayedFields
+  }
+  set displayedFields(fields : DisplayedFields) { this._displayedFields = fields }
+
   get metadataKey(): string { return ENTITY_METADATA_KEY + this.name }
   define() {
     Reflect.defineMetadata(this.metadataKey, this, EntityMetadata)
@@ -58,38 +70,45 @@ export class EntityMetadata<Entity> {
   initialize(translateService: TranslateService): Promise<[string, number]> {
     return new Promise((resolve, reject) => {
       var noOfTasks = 0
-      var pkList: Object[] = []
+      var pkList: { no : number, key : any}[] = []
       // translate the captions
       const keySingular = this.name + '.mel_captionSingular'
       const keyPlural = this.name + '.mel_captionPlural'
       const toTranslate: string[] = [keySingular, keyPlural]
-      for (let [key, colMeta] of Array.from(this.columnsMap)) {
+      for (let [key, fieldMd] of Array.from(this.fieldsMdMap)) {
         // getPrimarykey-Infos
-        if (colMeta.primaryKeyNo)
-          pkList.push({ no: colMeta.primaryKeyNo, key: key })
+        if (fieldMd.primaryKeyNo)
+          pkList.push({ no: fieldMd.primaryKeyNo, key: key })
         // Translate the enum-values
-         if (colMeta.type === FieldTypes.Enum) {
-          if (!colMeta.display.doNotTranslate && !colMeta.display.enumValues) {
+        if (fieldMd.type === FieldTypes.Enum && fieldMd.enumValues) {
+          if (!fieldMd.display?.doNotTranslate && !fieldMd.display?.enumValues ) {
+            if (!fieldMd.display)
+              fieldMd.display = {}
             var enum$: Observable<string>[] = []
-            for (let enumValue of colMeta.enumValues)
+            for (let enumValue of fieldMd.enumValues)
               enum$.push(translateService.get(`${this.name}.${key}Options.${enumValue}`))
             noOfTasks += enum$.length
-            forkJoin(enum$).subscribe(captions => colMeta.display.enumValues = captions)
+            forkJoin(enum$).subscribe(captions => {
+              if (fieldMd.display) fieldMd.display.enumValues = captions
+            })
           }
         }
         toTranslate.push(`${this.name}.${key}`)
       }
-      pkList = pkList.sort((a, b) => a['no'] - b['no'])
+      pkList  = pkList.sort((a, b) => a.no - b.no)
       for (var i = 0; i < pkList.length; i++)
-        this.primaryKeys.push(pkList[i]['key'])
+        this.primaryKeys.push(pkList[i].key)
       noOfTasks += toTranslate.length
       translateService.get(toTranslate)
         .subscribe(
           captions => {
             this.captionSingular = captions[keySingular]
             this.captionPlural = captions[keyPlural]
-            for (let [key, colMeta] of Array.from(this.columnsMap))
-              colMeta.display.caption = captions[`${this.name}.${key}`]
+            for (let [key, fieldMd] of Array.from(this.fieldsMdMap)){
+              if (!fieldMd.display)
+                fieldMd.display = {}
+              fieldMd.display.caption = captions[`${this.name}.${key}`]
+            }
           },
           error => reject(error),
           () => {
@@ -104,9 +123,15 @@ export class EntityMetadata<Entity> {
    * @param target the entity or EntityMetadata to get 
    * @param name   the name of the entity, if target is not the entity (target = EntityMetadata)
    */
-  public static get<Entity>(targetOrName: Function | string): EntityMetadata<Entity> {
+  public static get(targetOrName: Function | string): any {
     const key = ENTITY_METADATA_KEY + (typeof targetOrName === 'function' ? targetOrName.name : targetOrName)
     return Reflect.getMetadata(key, this)
+  }
+  public static assertGet(targetOrName: Function | string): EntityMetadata {
+    const md = EntityMetadata.get(targetOrName)
+    if (md)
+      return md as EntityMetadata
+    throw new Error(`EntityMetadata of "${targetOrName}" undefined!`)
   }
 }
 
@@ -116,171 +141,146 @@ export class EntityMetadata<Entity> {
 
 // NOTE: The order of calling the decorator-functions is not deterministic. 
 //       --> the Column-Decorator could be called before the Table- or View-Decorator
-export function Table(displayedColumns? : DisplayedColumns<any>): ClassDecorator {
+export function Table(displayedFields? : DisplayedFields): ClassDecorator {
   return (target: Function) => {
-    var metadata: EntityMetadata<Object> = EntityMetadata.get(target)
+    var metadata: EntityMetadata = EntityMetadata.get(target)
     if (metadata) {                             // entitymetadata was created by Column- or Assign-decorator
       metadata.type = EntityTypes.table
-      metadata._displayedColumns = displayedColumns
+      if (displayedFields)
+        metadata.displayedFields = displayedFields
     }
     else
-      (new EntityMetadata(target, EntityTypes.table, displayedColumns)).define()
+      (new EntityMetadata(target, EntityTypes.table, displayedFields)).define()
   }
 }
 
-export function View(displayedColumns? : DisplayedColumns<any>): ClassDecorator {
+export function View(displayedFields? : DisplayedFields): ClassDecorator {
   return (target: Function) => {
-    var metadata: EntityMetadata<Object> = EntityMetadata.get(target)
+    var metadata: EntityMetadata = EntityMetadata.get(target)
     if (metadata) {                             // entitymetadata was created by Column- or Assign-decorator
       metadata.type = EntityTypes.view
-      metadata._displayedColumns = displayedColumns
+      if (displayedFields)
+        metadata.displayedFields = displayedFields
     }
     else
-      (new EntityMetadata(target, EntityTypes.view, displayedColumns)).define()
+      (new EntityMetadata(target, EntityTypes.view, displayedFields)).define()
   }
 }
-/*
-export interface IColumnMetadata<Entity> {
-  name? : keyof Entity
-  primaryKeyNo?: number
-  isGenerated?: boolean        // autoincrement  
-  class?: FieldClasstypes
-  type: FieldTypes
-  enumValues?: string[]
-  default?: string | number | Date | boolean | Function
-  tableRelation?: ColumnTableRelation<Entity>
-  editable?: boolean
-  validators?: v.ValidationFunc<Entity>[]
-  autocomplete?: (value: string) => string
-  format?: (value: any) => string
-  formatString?: string
 
-  apiToJavaType?: (value: any) => string | number | Date | boolean | undefined
-  parse?: (value: any) => string | number | Date | boolean | undefined
-  javaToApiType?: (value: any) => string | number | undefined
-  display? : {
-    type?: InputType
-    subType?: InputSubType
-    doNotTranslate?: true
-    enumValues?: string[]
-    caption?: string
-    hint? : string
-  }
-}
-*/
 function concatValidations(funcs: ValidationFunc<any>[], toConcat?: ValidationFunc<any>[]): ValidationFunc<any>[] {
   return toConcat ? funcs.concat(...toConcat) : funcs
 }
 
-export function fillColumnMetadata(column: FieldMetadata<any>) : FieldMetadata<any>{
-  column.class = column.class || MelFieldClasses.Normal
-  column.editable = column.editable === undefined ? true : column.editable
-  if (column.validators && column.validators.length)
-    column.validators = column.validators.filter(validationFunc => validationFunc !== undefined )
-  if(!column.display)
-    column.display = {}
-  switch (column.type) {
+export function fillColumnMetadata(fieldMd: FieldMetadata<any>) : FieldMetadata<any>{
+  fieldMd.class = fieldMd.class || MelFieldClasses.Normal
+  fieldMd.editable = fieldMd.editable === undefined ? true : fieldMd.editable
+  if (fieldMd.validators && fieldMd.validators.length)
+    fieldMd.validators = fieldMd.validators.filter(validationFunc => validationFunc !== undefined )
+  if(!fieldMd.display)
+    fieldMd.display = {}
+  switch (fieldMd.type) {
     case FieldTypes.String: {
-      column.default = column.default || ''
-      column.format = column.format || formatString
-      column.parse = column.parse
-      column.display.subType = column.display.subType || 'text'
+      fieldMd.default = fieldMd.default || ''
+      fieldMd.format = fieldMd.format || formatString
+      fieldMd.parse = fieldMd.parse
+      fieldMd.display.subType = fieldMd.display.subType || 'text'
       break
     }
     case FieldTypes.Code: {
-      column.default = column.default || ''
-      column.format = column.format || formatCode
-      column.javaToApiType = column.javaToApiType || javaToApiCode
-      column.parse = column.parse
-      column.display.subType = column.display.subType || 'text'
+      fieldMd.default = fieldMd.default || ''
+      fieldMd.format = fieldMd.format || formatCode
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiCode
+      fieldMd.parse = fieldMd.parse
+      fieldMd.display.subType = fieldMd.display.subType || 'text'
       break
     }
     case FieldTypes.Integer: {
-      column.default = column.default || 0
-      column.autocomplete = column.autocomplete || autocompleteInt
-      column.validators = concatValidations([validateInteger], column.validators)
-      column.apiToJavaType = column.apiToJavaType || apiToJavaInteger
-      column.javaToApiType = column.javaToApiType || javaToApiInteger
-      column.format = column.format || formatInteger;
-      column.parse = column.parse || parseNumber
-      column.display.subType = column.display.subType || 'number'
+      fieldMd.default = fieldMd.default || 0
+      fieldMd.autocomplete = fieldMd.autocomplete || autocompleteInt
+      fieldMd.validators = concatValidations([validateInteger], fieldMd.validators)
+      fieldMd.apiToJavaType = fieldMd.apiToJavaType || apiToJavaInteger
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiInteger
+      fieldMd.format = fieldMd.format || formatInteger;
+      fieldMd.parse = fieldMd.parse || parseNumber
+      fieldMd.display.subType = fieldMd.display.subType || 'number'
       break
     }
     case FieldTypes.Decimal: {
-      column.default = column.default || 0
-      column.autocomplete = column.autocomplete || autocompleteDec
-      column.validators = concatValidations([validateDecimal], column.validators)
-      column.apiToJavaType = column.apiToJavaType || apiToJavaDecimal
-      column.javaToApiType = column.javaToApiType || javaToApiDecimal
-      column.format = column.format || formatDecimal;
-      column.parse = column.parse || parseNumber
-      column.display.subType = column.display.subType || 'number'
+      fieldMd.default = fieldMd.default || 0
+      fieldMd.autocomplete = fieldMd.autocomplete || autocompleteDec
+      fieldMd.validators = concatValidations([validateDecimal], fieldMd.validators)
+      fieldMd.apiToJavaType = fieldMd.apiToJavaType || apiToJavaDecimal
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiDecimal
+      fieldMd.format = fieldMd.format || formatDecimal;
+      fieldMd.parse = fieldMd.parse || parseNumber
+      fieldMd.display.subType = fieldMd.display.subType || 'number'
       break
     }
     case FieldTypes.Date: {
-      column.default = column.default
-      column.autocomplete = column.autocomplete || autocompleteDate
-      column.validators = concatValidations([validateDate], column.validators)
-      column.apiToJavaType = column.apiToJavaType || apiToJavaDate
-      column.javaToApiType = column.javaToApiType || javaToApiDate
-      column.format = column.format || formatDate
-      column.parse = column.parse || parseDate
-      column.display.subType = column.display.subType || 'text'
+      fieldMd.default = fieldMd.default
+      fieldMd.autocomplete = fieldMd.autocomplete || autocompleteDate
+      fieldMd.validators = concatValidations([validateDate], fieldMd.validators)
+      fieldMd.apiToJavaType = fieldMd.apiToJavaType || apiToJavaDate
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiDate
+      fieldMd.format = fieldMd.format || formatDate
+      fieldMd.parse = fieldMd.parse || parseDate
+      fieldMd.display.subType = fieldMd.display.subType || 'text'
       break
     }
     case FieldTypes.DateTime: {
-      column.default = column.default
-      column.autocomplete = column.autocomplete || autocompleteDateTime
-      column.validators = concatValidations([validateDateTime], column.validators)
-      column.apiToJavaType = column.apiToJavaType || apiToJavaDateTime
-      column.javaToApiType = column.javaToApiType || javaToApiDateTime
-      column.format = column.format || formatDateTime
-      column.parse = column.parse || parseDateTime
-      column.display.subType = column.display.subType || 'text'
+      fieldMd.default = fieldMd.default
+      fieldMd.autocomplete = fieldMd.autocomplete || autocompleteDateTime
+      fieldMd.validators = concatValidations([validateDateTime], fieldMd.validators)
+      fieldMd.apiToJavaType = fieldMd.apiToJavaType || apiToJavaDateTime
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiDateTime
+      fieldMd.format = fieldMd.format || formatDateTime
+      fieldMd.parse = fieldMd.parse || parseDateTime
+      fieldMd.display.subType = fieldMd.display.subType || 'text'
       break
     }
     case FieldTypes.Time: {
-      column.default = column.default
-      column.autocomplete = column.autocomplete || autocompleteTime
-      column.validators = concatValidations([validateTime], column.validators)
-      column.apiToJavaType = column.apiToJavaType || apiToJavaTime
-      column.javaToApiType = column.javaToApiType || javaToApiTime
-      column.format = column.format || formatTime
-      column.parse = column.parse || parseTime
-      column.display.subType = column.display.subType || 'text'
+      fieldMd.default = fieldMd.default
+      fieldMd.autocomplete = fieldMd.autocomplete || autocompleteTime
+      fieldMd.validators = concatValidations([validateTime], fieldMd.validators)
+      fieldMd.apiToJavaType = fieldMd.apiToJavaType || apiToJavaTime
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiTime
+      fieldMd.format = fieldMd.format || formatTime
+      fieldMd.parse = fieldMd.parse || parseTime
+      fieldMd.display.subType = fieldMd.display.subType || 'text'
       break
     }
     case FieldTypes.Boolean: {
-      column.default = column.default || false
-      column.validators = concatValidations([validateBoolean], column.validators)
-      column.apiToJavaType = column.apiToJavaType || apiToJavaBoolean
-      column.javaToApiType = column.javaToApiType || javaToApiBoolean
-      column.format = column.format || formatBoolean
-      column.parse = column.parse || parseBoolean
+      fieldMd.default = fieldMd.default || false
+      fieldMd.validators = concatValidations([validateBoolean], fieldMd.validators)
+      fieldMd.apiToJavaType = fieldMd.apiToJavaType || apiToJavaBoolean
+      fieldMd.javaToApiType = fieldMd.javaToApiType || javaToApiBoolean
+      fieldMd.format = fieldMd.format || formatBoolean
+      fieldMd.parse = fieldMd.parse || parseBoolean
       break
     }
     case FieldTypes.Enum: {
-      column.default = column.default || column.enumValues[0]
-      column.format = column.format || formatString
-      column.display.subType = column.display.subType || 'text'
+      if (!fieldMd.default && fieldMd.enumValues?.length)
+        fieldMd.default = fieldMd.enumValues[0]
+      fieldMd.format = fieldMd.format || formatString
+      fieldMd.display.subType = fieldMd.display.subType || 'text'
       break
     }
-    default: throw new Error(`columntype ${column.type} not yet implemented. "string,number,date or boolean" expected`)
+    default: throw new Error(`columntype ${fieldMd.type} not yet implemented. "string,number,date or boolean" expected`)
   }
-  return column
+  return fieldMd
 }
 
-export function Column(column: FieldMetadata<any>): PropertyDecorator {
+export function Field(field: FieldMetadata<any>): PropertyDecorator {
   return (target, key) => {
-    column.name = key
-    Reflect.defineMetadata(COLUMN_METADATA_KEY, fillColumnMetadata(column), target, key)
+    field.name = key as string 
+    Reflect.defineMetadata(COLUMN_METADATA_KEY, fillColumnMetadata(field), target, key)
 
-    var entityMetadata = EntityMetadata.get<Object>(target.constructor)
+    var entityMetadata = EntityMetadata.get(target.constructor)
     if (entityMetadata)                                         // EntityMetadata exist
-      entityMetadata.columnsMap.set(key as keyof Object, column)    // complete the entity
+      entityMetadata.fieldsMdMap.set(field.name, field)    // complete the entity
     else {  // Entitymetadata do not exist at this time   
       entityMetadata = new EntityMetadata(target.constructor) // create an empty entitymetadata
-      entityMetadata.columnsMap.set(key as keyof Object, column)    // set the column metadata
+      entityMetadata.fieldsMdMap.set(key as keyof Object, field)    // set the column metadata
       entityMetadata.define()                                 // and store it            
     }
    
@@ -295,29 +295,35 @@ export function Column(column: FieldMetadata<any>): PropertyDecorator {
  * @param value 
  * @param format 
  */
-function apiToJavaDateTime(value: any, format? : moment.MomentFormatSpecification): Date | undefined {
-  if (typeof value !== 'string')
-    return undefined
+function apiToJavaDateTime(value: string, format? : moment.MomentFormatSpecification): Date  {
   const mom = moment(value, format, true) // strict!
-  return mom.isValid ? mom.toDate() : undefined
+  if (mom.isValid())
+    return  mom.toDate()
+  throw new Error(`Date "${value} is an invalid date`)
 }
-function apiToJavaDate(value: any, format?: moment.MomentFormatSpecification): Date | undefined {
+function apiToJavaDate(value: any, format?: moment.MomentFormatSpecification): Date {
   return apiToJavaDateTime(value, format ? format : 'YYYY-MM-DD')
 }
-function apiToJavaTime(value: any, format?: moment.MomentFormatSpecification): Date | undefined {
+function apiToJavaTime(value: any, format?: moment.MomentFormatSpecification): Date {
   return apiToJavaDateTime(value, format ? format : 'HH:mm:ss')
 }
-function apiToJavaDecimal(value: any): number | undefined {
+function apiToJavaDecimal(value: any): number {
   value = parseNumber(value)
-  return isNaN(value) ? undefined : value 
+  if (isNaN(value))
+    throw new Error(`Decimal "${value} is invalid`)
+  return value 
 }
-function apiToJavaInteger(value: any): number | undefined {
+function apiToJavaInteger(value: any): number {
   value = parseNumber(value)
-  return  isNaN(value) ? undefined : Math.round(value)
+  if (isNaN(value))
+    throw new Error(`Integer "${value} is invalid`)
+  return  Math.round(value)
 }
-function apiToJavaBoolean(value: any): boolean | undefined {
+function apiToJavaBoolean(value: any): boolean {
   value = Boolean(value) 
-  return isBoolean(value) ? value : undefined
+  if (isBoolean(value) ) 
+    return value
+  throw new Error(`Boolean "${value} is invalid`)
 }
 //#endregion 
 
@@ -355,7 +361,7 @@ function formatBoolean(value: boolean | number, def?: '0' | '1' | boolean | numb
 //#endregion
 
 //#region autocompleter
-function dateShortcut(value: string): moment.Moment {
+function dateShortcut(value: string): moment.Moment | undefined {
   value = value.toLowerCase()
   if (value.match(/^[thymg]/g)) {
     switch (value[0]) {
@@ -368,7 +374,7 @@ function dateShortcut(value: string): moment.Moment {
   }
   return undefined
 }
-function timeShortcut(value: string): moment.Moment {
+function timeShortcut(value: string): moment.Moment | undefined {
   value = value.toLowerCase()
   if (value.match(/^[jnm]/g)) {
     switch (value[0]) {
@@ -420,33 +426,29 @@ function autocompleteDec(value: string): string {
 
 
 //#region convert to Api-values
-function javaToApiCode(value: any): string | undefined {
+function javaToApiCode(value: string): string {
   if (value !== undefined && value !== null) {
-    if (typeof value === 'string')
-      return value.toUpperCase()
-    else throw validationKey + 'String'
+    return value.toUpperCase()
+    //else throw validationKey + 'String'
   }
-  return undefined
+  return ''
 }
-function javaToApiDateTime(value: string): string | undefined {
-  var dateValue = parseDateTime(value)
-  return dateValue? dateValue.toISOString() : undefined
+function javaToApiDateTime(value: string): string {
+    return parseDateTime(value).toISOString() 
 }
-function javaToApiDate(value: any): string | undefined {
-  var dateValue = parseDate(value)
-  return dateValue? dateValue.toISOString() : undefined
+function javaToApiDate(value: any): string {
+  return  parseDate(value).toISOString()
 }
-function javaToApiTime(value: any): string | undefined {
-  var dateValue = parseTime(value)
-  return dateValue? dateValue.toISOString() : undefined
+function javaToApiTime(value: any): string  {
+  return parseTime(value).toISOString()
 }
-function javaToApiDecimal(value: any): number | undefined {
+function javaToApiDecimal(value: any): number {
   return value ? parseNumber(value) : value
 }
-function javaToApiInteger(value: any): number | undefined {
+function javaToApiInteger(value: any): number {
   return value ? parseNumber(value) : value
 }
-function javaToApiBoolean(value: any): number | undefined {
+function javaToApiBoolean(value: any): number {
   return parseBoolean(value) ? 1 : 0
 }
 

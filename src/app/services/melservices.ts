@@ -38,11 +38,11 @@ export class MelTableService extends EntityService<MelTable> {
 
   //#region trigger
   initColumnTrigger() {
-    super.initColumnTrigger()
+   
     this.triggerMap.set("Name", this.name.bind(this))
   }
   name(row : MelField) {
-    if (row?.Name.length == 0) row.Name =  camelCase(row.Name)
+    if (row?.Name?.length == 0) row.Name =  camelCase(row.Name)
   }
   //#endregion
 }
@@ -55,26 +55,12 @@ export class MelFieldService extends EntityService<MelField> {
   }
   protected get restEndpoint() : string { return  this.config.restAppEndpoint }
 
-  initColumnTrigger() {
-    super.initColumnTrigger()
+  protected override initColumnTrigger() {
     this.triggerMap.set("PrimaryKeyNo", this.primaryKeyNo.bind(this))
   }
-    /* deprecated
-  afterInit() : Observable<MelField> { 
-  
-    const last = new MelFieldService(this.httpClient, this.config, this.injector)
-    return last
-    .setRange("TableName", this.data.TableName)
-    .findLast()
-    .pipe( 
-      tap(column => isEmpty(column)? this.data.Id = 1 : this.data.Id = column.Id + 1),
-      map(entity => this.data)
-    ) 
-    
-  }
-  */
+ 
   primaryKeyNo(row : MelField) {
-    if (row.PrimaryKeyNo < 1) delete row.PrimaryKeyNo
+    if (row.PrimaryKeyNo && row.PrimaryKeyNo < 1) delete row.PrimaryKeyNo
   }
 }
 

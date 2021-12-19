@@ -30,6 +30,6 @@ export class CardSelectComponent extends BaseSelectComponent {
   constructor(host: ElementRef) {
     super(host)
   }
-  @Input() editable : boolean 
-  @Input() caption : string 
+  @Input() editable : boolean = false
+  @Input() caption : string = '' 
 }

@@ -1,19 +1,19 @@
 import { Inject, Injector, Component, OnInit, HostListener } from '@angular/core'
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog'
-import { FormControl, FormArray, ValidationErrors, FormGroup } from '@angular/forms'
+import { FormControl, FormArray, ValidationErrors, FormGroup, AbstractControlOptions, ValidatorFn } from '@angular/forms'
 import { TranslateService } from '@ngx-translate/core'
 import { isEmpty } from 'lodash'
 
 import { FieldTypes, FilterOperators} from'mel-common'
 import { FilterExpressionControl } from '../../controls/filterExpressionControl'
-import { EntityMetadata} from '../../../metadata/entities';
-import { ClientFilters } from 'src/app/services/core/filters'
-import { FieldConditions, ClientCondition, ITranslateOptions } from 'src/app/services/core/filter-condition'
+import { ClientFilters } from 'src/app/services/core/client-filters'
+import { FieldConditions, ClientFilterCondition, ITranslateOptions } from 'src/app/services/core/client-filter-condition'
+import { EntityLiteral } from 'src/app/types'
 
-export interface IFilterDialogData<Entity> {
+export interface IFilterDialogData {
   title? : string
   entityName : string
-  filters : ClientFilters<Entity>
+  filters : ClientFilters<EntityLiteral>
   useFlowfilters? : boolean
 }
 
@@ -40,42 +40,45 @@ export class FilterDialogComponent {
   filterElements : FormArray
   fieldNames : string []
 
-  constructor(@Inject(MAT_DIALOG_DATA)  private data: IFilterDialogData<Object>, 
+  constructor(@Inject(MAT_DIALOG_DATA)  private data: IFilterDialogData, 
                                         private translate : TranslateService, 
                                         private dialogRef:MatDialogRef<FilterDialogComponent>) { 
-    const metadata = EntityMetadata.get(data.entityName)
     if (!data.title) 
       translate.get(`List.${data.entityName}`).subscribe(result => this.data.title = result)   
     this.filterElements = new FormArray( [] )
     this.fieldNames = data.useFlowfilters ? data.filters.flowFilterFieldNames : data.filters.unlockedFilterFieldNames
 
     const fieldConditions = data.useFlowfilters? data.filters.copyFlowFieldConditions() : data.filters.copyNormalFieldConditions(false) 
-    if (isEmpty(fieldConditions))
-      this.addFilterelement( this.firstUnusedFieldName() )
+    if (isEmpty(fieldConditions)){
+      this.addFilterelement( this.firstUnusedFieldName() || 'No fieldname found' )
+    }
     else
       Object.entries(fieldConditions).forEach(([fieldName, condition], i) => 
         this.addFilterelement(fieldName, condition)
       )
   }
 
-  get caption():string { return this.data.title}
+  get caption():string { return this.data.title||''}
   
   @HostListener('keydown', ['$event']) 
   onKeyDown(event : KeyboardEvent) {
     if (event.ctrlKey && event.code == 'Enter' && this.filterElements?.status !=='INVALID')
       this.newFilterelement()
   }
-  static validate(ctrl : FilterExpressionControl) : ValidationErrors {
+  static validate(ctrl : FilterExpressionControl) : ValidationErrors | null{
     return  ctrl.columnType && (ctrl.value as string)?.length ? ctrl.validate() : null
   }
 
   validationErrors(i : number):string{ 
-    const errs = this.filterElements.controls[i].get(conditionControlName).errors
     var errors = ''
-    if (errs){
-      for (let err of Object.values(errs))
-        errors += err + '; '
-    } 
+    const ctrl = this.filterElements.controls[i].get(conditionControlName)
+    if (ctrl){
+      const errs = ctrl.errors
+      if (errs){
+        for (let err of Object.values(errs))
+          errors += err + '; '
+      } 
+    }
     return errors
   }
 
@@ -83,35 +86,42 @@ export class FilterDialogComponent {
     return this.filterElements.controls.map( element => {return (element as FormGroup).controls.fieldName.value} )
   }
 
-  firstUnusedFieldName() : string {
+  firstUnusedFieldName() : string | undefined {
     const used = this.usedFieldNames()
     for (let fieldName of this.fieldNames as string[])
       if (!used.includes(fieldName)) return fieldName
     return undefined
   }
 
-  newFilterelement() : FormGroup {
-    return this.addFilterelement( this.firstUnusedFieldName() )
+  newFilterelement() : FormGroup | undefined{
+    const fieldName = this.firstUnusedFieldName()
+    return fieldName ? this.addFilterelement( fieldName ) : undefined
   }
-  translateOptions(columnType : FieldTypes, fieldName : string) : ITranslateOptions {
+  translateOptions(columnType : FieldTypes, fieldName : string) : ITranslateOptions | undefined{
     return columnType == FieldTypes.Enum ? { path : `${this.data.entityName}.${fieldName}Options`, service : this.translate} : undefined
   }
   /**
    * Creates a FilterExpressionControl from the fieldName and condition
-   * @param fieldName   the filedname
+   * @param fieldName the fieldname
    * @param condition the condiition
    */
-  addFilterelement(fieldName : string, condition : ClientCondition = undefined) : FormGroup {
+  addFilterelement(fieldName : string, condition? : ClientFilterCondition) : FormGroup | undefined {
+    var _fieldName = fieldName as string|undefined 
     if (!fieldName?.length ) 
-      fieldName = this.firstUnusedFieldName()
-    if (fieldName?.length) {
-      const colMetadata = this.data.filters.fieldsMetadata.get(fieldName as keyof Object)
+      _fieldName = this.firstUnusedFieldName()
+    if (_fieldName?.length) {
+      const colMetadata = this.data.filters.fieldsMetadata.get(_fieldName)
       if (colMetadata){ 
-        if (!condition) condition = new ClientCondition(FilterOperators.cplx, [''], colMetadata.type) 
-        condition.translateOptions = this.translateOptions(colMetadata.type, fieldName)
+        if (!condition) condition = new ClientFilterCondition(FilterOperators.cplx, [''], colMetadata.type) 
+        condition.translateOptions = this.translateOptions(colMetadata.type, _fieldName)
         const filterControl = new FormGroup({})
-        filterControl.addControl(fieldNameControlName, new FormControl(fieldName))
-        filterControl.addControl(conditionControlName, new FilterExpressionControl(condition, {validators: [FilterDialogComponent.validate], updateOn:'blur'}))
+        filterControl.addControl(fieldNameControlName, new FormControl(_fieldName))                                                                   
+        filterControl.addControl(conditionControlName, 
+          new FilterExpressionControl(condition, 
+                                      {
+                                        validators: FilterDialogComponent.validate as ValidatorFn, 
+                                        updateOn:'blur'
+                                      }))
         this.filterElements.push(filterControl)
         return filterControl
       }
@@ -130,8 +140,8 @@ export class FilterDialogComponent {
   onFieldNameChange(newFieldName : string, index: number){
     const filterExpressionControl = this.filterExpressionControl(index)
     filterExpressionControl.reset()
-    const colMetadata = this.data.filters.fieldsMetadata.get(newFieldName as keyof Object)
-    filterExpressionControl.condition = new ClientCondition(FilterOperators.cplx, [''], colMetadata.type) 
+    const colMetadata = this.data.filters.assertGetFieldMetadata(newFieldName as string)
+    filterExpressionControl.condition = new ClientFilterCondition(FilterOperators.cplx, [''], colMetadata.type) 
     filterExpressionControl.condition.translateOptions = this.translateOptions(colMetadata.type, newFieldName)
   }
  
@@ -152,11 +162,11 @@ export class FilterDialogComponent {
   }
   
   save() {
-    var conditions : FieldConditions<Object> = {}
+    var conditions : FieldConditions<EntityLiteral> = {}
  
     for(let formGroup of this.filterElements.controls){   
       const conditionControl = formGroup.get(conditionControlName) as FilterExpressionControl
-      const fieldNameControl = formGroup.get(fieldNameControlName)
+      const fieldNameControl = formGroup.get(fieldNameControlName) as FormControl
       if (conditionControl.value.length > 0){
         conditions[fieldNameControl.value] = conditionControl.condition.translateEnumsInv()
       }  

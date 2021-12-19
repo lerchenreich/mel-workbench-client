@@ -27,5 +27,5 @@ export class CardCheckboxComponent extends BaseCheckboxComponent {
     super(host)
   }
 
-  @Input() caption : string
+  @Input() caption : string = ''
 }

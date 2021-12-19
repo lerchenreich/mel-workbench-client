@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
+import {isEmpty } from 'lodash'
 import { MelTable } from 'src/app/models/mel-table';
 import { Card } from '../../core/card';
 
@@ -21,19 +22,20 @@ export class MelTableCardComponent  extends Card<MelTable> implements OnInit {
               messageBox : MatDialog, snackBar : MatSnackBar ) { 
     super(MelTable, router, injector, translate, messageBox, snackBar)
   }
-  get sublistLocked() : boolean { return !this.rec?.Name?.length}
+  get sublistLocked() : boolean { return !isEmpty(this.rec?.Name)}
   
   ngOnInit() : void {
     
     this.accessRights = 'md'
     const tablename = this.route.snapshot.paramMap.get('name')
-    if ( tablename.length === 0){    
-      this.add()
-    } 
-    else {
-      this.param.Name = tablename  
-      this.rec.Name = tablename
-      this.get([this.findObserver]) 
+    if (tablename){
+      if ( tablename.length === 0)  
+        this.add()
+      else {
+        this.param.Name = tablename  
+        this.rec.Name = tablename
+        this.get([this.findObserver])
+      } 
     }
   }
   

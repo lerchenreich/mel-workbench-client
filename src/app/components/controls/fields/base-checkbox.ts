@@ -12,11 +12,11 @@ export class BaseCheckboxComponent extends MelElement implements OnInit {
   } 
   static nextId : number = 1
   controlType  = 'mel-checkbox'
-  protected inputElement : HTMLInputElement
+  protected inputElement? : HTMLInputElement
   protected inputChange = new EventEmitter<any>()
   
   @Input() value : any
-  @Input() editable : boolean
+  @Input() editable : boolean = false
   @Input() set changedObs(obs : NextObserver<string|boolean>){
     if(obs)
       this.inputChange.pipe(untilDestroyed(this)).subscribe(obs) 

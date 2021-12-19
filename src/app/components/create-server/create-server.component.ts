@@ -9,7 +9,7 @@ import { OpenDialogOptions, OpenDialogReturnValue } from 'electron/renderer'
 import JSZip from 'jszip';
 import { ElectronService } from 'ngx-electron';
 
-import { CreateServerProjectOptions, notBlank , FieldTypes } from 'mel-common'
+import { CreateServerProjectOptions, notBlank , FieldTypes, MelFieldClasses } from 'mel-common'
 import { ClientConfig, CLIENT_CONFIG } from 'src/app/client.configs';
 import { fillColumnMetadata } from 'src/app/metadata/entities';
 import { AlertService } from 'src/app/services/alert.service';
@@ -18,8 +18,8 @@ import { CardData } from '../core/page-data';
 import { FieldContext } from '../core/types';
 import { BaseInputComponent } from '../controls/fields/base-input';
 import { ModalWaitComponent } from '../dialogs/modal-wait/modal-wait.component';
-import { FieldMetadata } from '../../types';
-class CreateServerEntity {
+import { EntityLiteral, FieldMetadata } from '../../types';
+class CreateServerEntity extends EntityLiteral{
   name? : string
   version? : string
   description? : string
@@ -33,8 +33,8 @@ class CreateServerEntity {
 })
 @UntilDestroy()
 export class CreateServerComponent implements OnInit, AfterViewInit {
-  contextMap : Map<keyof CreateServerEntity, FieldContext<CreateServerEntity>>
-  metaMap = new Map<keyof CreateServerEntity, FieldMetadata<CreateServerEntity>>()
+  contextMap = new Map<string, FieldContext<CreateServerEntity>>()
+  metaMap = new Map<string, FieldMetadata<CreateServerEntity>>()
   
   cardData : CardData<CreateServerEntity>
   
@@ -44,10 +44,10 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
     description : "Beschreibung"
   }
   metadata : FieldMetadata<CreateServerEntity>[] = [
-    { name : "name", type : FieldTypes.String, validators : [notBlank]},
-    { name : "version", type : FieldTypes.String},
-    { name : "description", type : FieldTypes.String},
-    { name : "targetDir", type : FieldTypes.String, editable:false, validators : [notBlank] }
+    { name : "name",        type : FieldTypes.String, class : MelFieldClasses.None, validators : [notBlank]},
+    { name : "version",     type : FieldTypes.String, class : MelFieldClasses.None},
+    { name : "description", type : FieldTypes.String, class : MelFieldClasses.None},
+    { name : "targetDir",   type : FieldTypes.String, class : MelFieldClasses.None, validators : [notBlank], editable:false, }
   ]
 
   constructor(private modalService : NgbModal, protected appService : AppService,
@@ -56,11 +56,9 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
               public alert : AlertService, private snackBar : MatSnackBar,
               public translate : TranslateService, @Inject(CLIENT_CONFIG) public config : ClientConfig) {
     this.entity.name = config.appCode
-
-    this.contextMap = new Map<keyof CreateServerEntity, FieldContext<CreateServerEntity>>()
-    this.metadata.forEach( md => this.metaMap.set(md.name, fillColumnMetadata(md)) )
+    this.metadata.forEach( md => this.metaMap.set(md.name as string, fillColumnMetadata(md)) )
     this.cardData = new CardData<CreateServerEntity>(this.entity, this.metaMap)
-    this.metadata.forEach( md => this.contextMap.set(md.name, {data : this.cardData, meta : md}))
+    this.metadata.forEach( md => this.contextMap.set(md.name as string, {data : this.cardData, meta : md}))
   }
 
   ngOnInit(): void {
@@ -69,8 +67,11 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
     }
     catch(error){ this.alert.alertWarning("No Blob-support => can't save generated file")}
   }
-  context(fieldName : keyof CreateServerEntity) : FieldContext<CreateServerEntity> {
-    return this.contextMap.get(fieldName)
+  context(fieldName : string) : FieldContext<CreateServerEntity> {
+    const ctx =  this.contextMap.get(fieldName)
+    if (ctx) 
+      return ctx
+    throw new Error(`Context for "${fieldName}" is undefined`)
   }
 
   targetDirAssistObs = {
@@ -93,8 +94,9 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
     var doCreate : boolean = true
     try{
       if (await this.cardData.validate()){
-        var targetFolder = this.cardData.validationRec.targetDir
-        var projectFolder= [targetFolder, this.cardData.validationRec.name] 
+        const vRec = this.cardData.assertVRec
+        var targetFolder = vRec.targetDir
+        var projectFolder= [targetFolder, vRec.name] 
         if (await this.eSvc.ipcRenderer.invoke("fs-exist", projectFolder)){
           var dirEnt = await this.eSvc.ipcRenderer.invoke('fs-dir', 'list', projectFolder) as any[]
           doCreate = dirEnt.length == 0
@@ -105,43 +107,44 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
         }
         // get the current serverproject
         const options : CreateServerProjectOptions = {
-          name : this.cardData.validationRec.name,
-          version : this.cardData.validationRec.version,
+          name : vRec.name as string,
+          version : vRec.version as string,
           keywords : ['server'],
           author: 'a.berger',
           license : 'MIT',
           serverPort : 4711,
           databaseConfiguration : { host : '192.168.0.108', port : 3345, username : 'root', password : '1', database : '' },
           databaseType : 'mysql',
-          description : this.cardData.validationRec.description,
+          description : vRec.description as string,
         }
         var modalRef = this.modalService.open(ModalWaitComponent, {centered : true})
         modalRef.componentInstance.title = 'CreateServer.Title'
         modalRef.componentInstance.action = 'CreateServer.WaitFor'
         modalRef.componentInstance.actionContext = options
-        this.appService.createServer(options)
+        this.appService.createServerProject(options)
         .subscribe( 
           async base64Encoded => {
             var serverZip = await JSZip.loadAsync(base64Encoded, {base64 : true, createFolders : true})
-            const projectZipFolder = serverZip.folder(this.cardData.validationRec.name)
-            //create the folderstructure
-            var subFolders = projectZipFolder.filter( (path , file) => file.dir )
-            subFolders.forEach(async folder => {
-              const f = [targetFolder, folder.name]
-              await this.eSvc.ipcRenderer.invoke('fs-dir','mk', f)
-            })
-            if (doCreate){
-              var files = projectZipFolder.filter( (path , file) => {
-                return !file.dir && (file.name.includes('package.json') || 
-                                     file.name.includes('tsconfig.json') ||
-                                     file.name.endsWith('.vscode/launch.json') ||
-                                     file.name.endsWith('.vscode/settings.json')
-                                     )
+            const projectZipFolder = serverZip.folder(vRec.name as string)
+            if (projectZipFolder) { //create the folderstructure
+              var subFolders = projectZipFolder.filter( (path , file) => file.dir )
+              subFolders.forEach(async folder => {
+                const f = [targetFolder, folder.name]
+                await this.eSvc.ipcRenderer.invoke('fs-dir','mk', f)
               })
-              files.forEach(async file => {
-                const data = await file.async('string')
-                await this.eSvc.ipcRenderer.invoke('fs-write', [targetFolder, file.name], data, false)
-              })
+              if (doCreate){
+                var files = projectZipFolder.filter( (path , file) => {
+                  return !file.dir && (file.name.includes('package.json') || 
+                                      file.name.includes('tsconfig.json') ||
+                                      file.name.endsWith('.vscode/launch.json') ||
+                                      file.name.endsWith('.vscode/settings.json')
+                                      )
+                })
+                files.forEach(async file => {
+                  const data = await file.async('string')
+                  await this.eSvc.ipcRenderer.invoke('fs-write', [targetFolder, file.name], data, false)
+                })
+              }
             }
           },
           error => {
@@ -157,7 +160,7 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
       }
     }
     catch(error){
-      this.alert.alertError(error)
+      this.alert.alertError(error as string)
     }
   }
 

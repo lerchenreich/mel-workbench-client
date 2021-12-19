@@ -5,12 +5,14 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
 import { isEmpty } from 'lodash'
 
-import { FilterOperators, SortOrder } from 'mel-common'
-import { ClientFilters } from 'src/app/services/core/filters';
+import { FilterOperators, MelError, SortOrder } from 'mel-common'
+import { ClientFilters } from 'src/app/services/core/client-filters';
 
 import { ListPage } from '../../core/list.page';
-import { ClientCondition} from 'src/app/services/core/filter-condition';
+import { ClientFilterCondition} from 'src/app/services/core/client-filter-condition';
 import { PageTypes } from 'src/app/components/core/types';
+import { ObjectLiteral } from 'src/app/types';
+
 
 /**
  * Inputstructure of entityConfig
@@ -18,8 +20,8 @@ import { PageTypes } from 'src/app/components/core/types';
 export interface EntityConfig {
   name : string,
   permissions : string,
-  link? : Object,
-  view? : Object,
+  link? : ObjectLiteral,
+  view? : ObjectLiteral,
   sort? : SortOrder<any>
 }
 /**
@@ -41,8 +43,8 @@ export interface EntityConfig {
   styleUrls: ['../../core/list.component.css']
 })
 @UntilDestroy()
-export class ListPartComponent extends ListPage<Object> implements OnInit, AfterViewInit {
-  private entityConfig : EntityConfig
+export class ListPartComponent extends ListPage<ObjectLiteral> implements OnInit, AfterViewInit {
+  private entityConfig? : EntityConfig
 
   constructor(injector : Injector, translate: TranslateService, dialog : MatDialog, snackBar : MatSnackBar) {
     super(injector, translate, dialog, snackBar)
@@ -50,35 +52,42 @@ export class ListPartComponent extends ListPage<Object> implements OnInit, After
   }
 
   @Input('entityConfig') set _entityConfig(config : string){ 
-    this.entityConfig = JSON.parse(config) 
-    this.entityName = this.entityConfig.name
+    try{
+      this.entityConfig = JSON.parse(config) as EntityConfig
+      this.entityName = this.entityConfig.name
+    }
+    catch(parserError){
+      throw MelError.create(parserError as Error, 'ListpartComponent.@Input.entityConfig')
+    }
   }
 
-  @Input() expanded : boolean
+  @Input() expanded : boolean = false
   @Input('pageSize')  set _pageSize(n : number) { this.pageSize = n }
   @Input('locked')    set _locked(b : boolean) { this.locked = b}
   
 
   ngOnInit(){
     super.ngOnInit()
-    this.accessRights = this.entityConfig.permissions
+    this.accessRights = this.entityConfig?.permissions || ''
     this.listContext.permissions = this.permissions
     //console.info(`${this.constructor.name}.OnInit, Permissions: "${this.permissions.permissionString}"`)
-    if (!isEmpty(this.entityConfig.link)){
-      const linkedFilter = new ClientFilters(this.columnsMap) 
-      Object.entries(this.entityConfig.link).forEach( ([fieldName, value]) => 
-        linkedFilter.filters[fieldName] = new ClientCondition(FilterOperators.unknown, [value], this.columnsMap.get(fieldName as keyof Object).type))
+    if (this.entityConfig && !isEmpty(this.entityConfig.link) && this.fieldsMdMap){
+      const linkedFilter = new ClientFilters(this.fieldsMdMap)
+      Object.entries(this.entityConfig.link as ObjectLiteral).forEach( ([fieldName, value]) => 
+        linkedFilter.filters[fieldName] = new ClientFilterCondition(FilterOperators.unknown, [value], this.assertGetFieldMd(fieldName).type))
       this.mergeFilters(linkedFilter) 
       this.lockFilters(Object.keys(linkedFilter.filters))
     }
-    if (!isEmpty(this.entityConfig.view)){
-      this.viewFilters = new ClientFilters(this.columnsMap) 
-      Object.entries(this.entityConfig.view).forEach( ([fieldName, value]) => 
-        this.viewFilters.filters[fieldName] = new ClientCondition(FilterOperators.unknown, [value], this.columnsMap.get(fieldName as keyof Object).type))
+    if (this.entityConfig && !isEmpty(this.entityConfig.view) && this.fieldsMdMap){
+      this.viewFilters = new ClientFilters(this.fieldsMdMap) 
+      Object.entries(this.entityConfig.view as ObjectLiteral).forEach( ([fieldName, value]) => 
+        (this.viewFilters as ClientFilters<ObjectLiteral>).filters[fieldName] = new ClientFilterCondition(FilterOperators.unknown, 
+                                                                                                    [value], 
+                                                                                                    this.assertGetFieldMd(fieldName).type))
       this.mergeFilters(this.viewFilters) 
     }
-    if (!isEmpty(this.entityConfig.sort))
-      this.sortOrder = this.entityConfig.sort
+    if (this.entityConfig && !isEmpty(this.entityConfig.sort))
+      this.setOrder(this.entityConfig.sort)
       
     this.afterFilterChanged()
   }

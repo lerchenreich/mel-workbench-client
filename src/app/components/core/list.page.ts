@@ -7,7 +7,7 @@ import { Options as SliderOptions, ChangeContext as SliderContext} from '@angula
 import { TranslateService } from '@ngx-translate/core';
 import { untilDestroyed } from '@ngneat/until-destroy';
  
-import { FieldTypes, SortOrder } from 'mel-common'
+import { FieldTypes, MelFieldClasses, SortOrder } from 'mel-common'
 
 import { DeleteResult, EntityService } from 'src/app/services/core/entityService';
 import { ListRow, PageData } from './page-data';
@@ -15,7 +15,9 @@ import { IPagemodeChanged, Page } from './page';
 import { ListComponent } from '../controls/mel-list/mel-list.component';
 import { ListFieldComponent } from '../controls/fields/listfield/listfield.component';
 import { ListContext, SaveRequestEvent } from './types';
-import { FieldMetadata } from '../../types';
+import { EntityListLiteral, EntityLiteral, FieldMetadata } from '../../types';
+import { EntityMetadata } from 'src/app/metadata/entities';
+import { isEmpty } from 'lodash';
 
 
 function log(text:string){console.log(text)}
@@ -63,7 +65,7 @@ function logError(text:string){console.error(text)}
 
 
 @Directive()
-export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, AfterViewInit {
+export abstract class ListPage<Entity extends EntityLiteral> extends Page<Entity> implements OnInit, AfterViewInit {
   constructor(injector : Injector, translate: TranslateService, dialog : MatDialog, snackBar : MatSnackBar) {
     super(injector, translate, dialog, snackBar)
   }
@@ -72,12 +74,12 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
 
   public dataSource  = new MatTableDataSource<ListRow<Entity>>()
   protected pageSize : number = 20
-  public locked : boolean
-  public sortOrder : SortOrder<any>
+  public locked : boolean = true
+  public sortOrder? : SortOrder<Entity>
   protected totalRecCount = 0  // the total number of records within the filters
   public currPageNo : number = -1
-  public get colMetadata() : FieldMetadata<Entity>[] { return this.listContext.metadata }
-  public set colMetadata(md ) { this.listContext.metadata = md }
+  public get fieldMd() : FieldMetadata<Entity>[] { return this.listContext.metadata || []}
+  public set fieldMd(md) { this.listContext.metadata = md }
  
   get title() : string {
     return this.hasUnlockedFilters ? this.caption + ' - ' + this._recService?.friendlyFilters : this.caption
@@ -86,12 +88,19 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
   public get nothingSelected() : boolean { 
     return this.listComponent? this.listComponent.rowSelection.isEmpty() : true
   }
-  listContext : ListContext<Entity> 
+  public get hasInvalidRow() : boolean{
+    return !!this.listComponent?.firstInvalidRow
+  }
+  listContext : ListContext<Entity> = {}
    
-  @ViewChild('melList') listComponent : ListComponent
-
+  @ViewChild('melList') listComponent? : ListComponent
+  get assertListComponent() : ListComponent { 
+    if (this.listComponent) return this.listComponent
+    throw new Error('listComponent is undefined!')
+  }
   protected shouldSave() : boolean {
-    return this.listComponent.isDirty && (this.listComponent.firstInvalidRow !== undefined)
+    //if (!this.listComponent) return false
+    return !!this.listComponent?.isDirty && !!this.listComponent.firstInvalidRow 
   }
     /**
    * Get the fieldnames to display and their metadata 
@@ -103,7 +112,7 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
     this.listContext = {
       permissions : this.permissions,
       touchedObs : { 
-        next : (field : ListFieldComponent) => this._recService.triggerColumn(field.name as keyof Entity, field.validationRec)
+        next : (field : ListFieldComponent) => this.assertRecService.triggerColumn(field.name, field.validationRec)
       }, 
       sortObs    :  { 
         next : newSortorder => {
@@ -114,7 +123,7 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
       addRowObs  : { next : rowIndex => this.addRowAt(rowIndex) },
     }
     // Status-column
-    this.colMetadata = [{name : PageData.statusColumn as keyof Entity, editable : false, type : FieldTypes.String} ]
+    this.fieldMd = [{name : PageData.statusColumn, editable : false, type : FieldTypes.String, class : MelFieldClasses.None} ]
     this.addDisplayedColumns()
   }
   ngAfterViewInit(){
@@ -122,23 +131,27 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
     super.ngAfterViewInit()
    
     this.pagemodeChanged.subscribe( (pageModeInfo : IPagemodeChanged) => {
-      this.listComponent.parentPagemode = pageModeInfo.newMode 
+      this.assertListComponent.parentPagemode = pageModeInfo.newMode 
     })
   }
 
   //#region paging
-  @ViewChild('pageSlider',  { read: ElementRef }) pageSliderRef: ElementRef<HTMLDivElement>
-  get pageSliderElement(): HTMLDivElement { return this.pageSliderRef.nativeElement }
+  @ViewChild('pageSlider', { read: ElementRef }) 
+  pageSliderRef?: ElementRef<HTMLDivElement>
+  
+  get pageSliderElement(): HTMLDivElement | null { return this.pageSliderRef?.nativeElement || null}
   
   public set pageCeil(ceil :number){
     ceil = Math.max(1, ceil)
     const newSliderOptions = Object.assign( {}, this.sliderOptions)
     newSliderOptions.ceil = ceil
-    newSliderOptions.showTicksValues = !newSliderOptions.vertical && Math.round(ceil/newSliderOptions.tickStep) <= this.showTickValuesThreshold
+    newSliderOptions.showTicksValues = !newSliderOptions.vertical && Math.round(ceil/(newSliderOptions.tickStep||1)) <= this.showTickValuesThreshold
     this.sliderOptions = newSliderOptions
-    var style = this.pageSliderElement.style
-    style.display = ceil > 1 ? 'flex' : 'none'
-    style.height = `${this.pageSize * this.rowHeight}px`
+    if (this.pageSliderElement) {
+      var style = this.pageSliderElement.style
+      style.display = ceil > 1 ? 'flex' : 'none'
+      style.height = `${this.pageSize * this.rowHeight}px`
+    }
   }
   sliderOptions : SliderOptions = {
     floor : 1,              //readonly
@@ -182,13 +195,13 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
    * @param event 
    */
   saveData() {
-    //this.listComponent.dirtyRows.forEach(row => row.validate(true))
-    const row = this.listComponent.firstInvalidRow
+    const listComp = this.assertListComponent 
+    const row = listComp.firstInvalidRow
     if (row) {
-      this.listComponent.setFocusToFirstInvalidCell(row)
+      listComp.setFocusToFirstInvalidCell(row)
     }
     else 
-      this.listComponent.dirtyRows.forEach(row => this.tryUpdate({pageData : row}))
+      listComp.dirtyRows.forEach(row => this.tryUpdate({pageData : row as PageData<EntityLiteral, ListFieldComponent>}))
   }
  
   /**
@@ -198,19 +211,20 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
    * @param event 
    */
   protected deleteData() {
-    var rowIndicesToDelete = this.listComponent.selectedRowIndices.filter( i => !this.dataSource.data[i].isNew )
+    const listComp = this.assertListComponent 
+    var rowIndicesToDelete = listComp.selectedRowIndices.filter( i => !this.dataSource.data[i].isNew )
     var count = rowIndicesToDelete.length
     var messageKey, params
     switch( count ){
-      case 0 :  if ( this.listComponent.selectedRowIndices.length > 0)
+      case 0 :  if ( listComp.selectedRowIndices.length > 0)
                   this.refresh()
                 return
       case 1 : { 
         messageKey = 'DeleteOne'
         Object.assign(this.rec, this.recordSet[rowIndicesToDelete[0]])
-        const pkFields = this.getPrimaryKeyFields()
-        if (pkFields) {
-           params = {context : Object.values(pkFields).toString()}
+        const pkFields = this.primaryKeyFields
+        if (!isEmpty(pkFields)) {
+          params = {context : Object.values(pkFields).toString()}
         }
         else {
           this.alertService.alertWarning('Invalid primary-key!')
@@ -232,15 +246,15 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
   public deleteSelected(rowIndicesToDelete : number[]) {
     var delete$ : Observable<DeleteResult>[] = []
     var count = 0
-    var clone : EntityService<Entity> 
+    var clone : EntityService<EntityLiteral> 
     rowIndicesToDelete.forEach( selIdx => {
-      clone = EntityService.createFrom(this._recService)
+      clone = EntityService.createFrom(this.assertRecService)
       Object.assign(clone.data, this.recordSet[selIdx])
       delete$.push(clone.delete())
     })
     forkJoin(delete$)  // wait until all rows are deleted
     .subscribe({
-      next : deleted => deleted.forEach(res => count += res.affected),
+      next : deleted => deleted.forEach(res => count += res.affected||0),
       error :  error => this.handleServerError(error),
       complete : () => {   
         this.totalRecCount -= count     
@@ -248,10 +262,10 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
         var key = 'Message.'
         switch (count){
           case 0 : translate$ = this.translate.get(key+'NoneDeleted'); break
-          case 1 : translate$ = this.translate.get(key+'OneDeleted', {singularName : this.entityMetadata.captionSingular}); break
-          default: translate$ = this.translate.get(key+'MoreDeleted', {count : count, pluralName : this.entityMetadata.captionPlural}); break
+          case 1 : translate$ = this.translate.get(key+'OneDeleted', {singularName : this.entityMetadata?.captionSingular}); break
+          default: translate$ = this.translate.get(key+'MoreDeleted', {count : count, pluralName : this.entityMetadata?.captionPlural}); break
         }      
-        this.listComponent.selectedRowIndices  
+        this.assertListComponent.selectedRowIndices = []  
         translate$.subscribe( message => this.snack(message) )
         this.refresh()
       }
@@ -261,16 +275,17 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
 
 
   addDisplayedColumns(){
-    const toAdd = this.isRoutedList ? this._recService.entityMetadata.displayedColumns.default : this._recService.entityMetadata.displayedColumns.part
+    const rec = this.assertRecService
+    const toAdd = this.isRoutedList ? rec.entityMetadata.displayedFields.default : rec.entityMetadata.displayedFields.part
     if (toAdd && toAdd.length){
       for (let name of toAdd) {
-        this.colMetadata.push(Object.assign(this.columnsMap.get(name as keyof Entity), {name : name as string}))
+        this.fieldMd.push(Object.assign(this.assertGetFieldMd(name as string), {name : name as string}))
       }
     }
     else { // select ALL without _timestamp 
-      this.columnsMap.forEach( (colMeta, key) => {
+      this.assertFieldsMdMap.forEach( (colMeta, key) => {
         if (key !== 'timestamp'){ 
-          this.colMetadata.push(Object.assign(colMeta, {name : key as string}))
+          this.fieldMd.push(Object.assign(colMeta, {name : key as string}))
         }
       })
     }
@@ -279,7 +294,7 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
   //#endregion Abstract Page-methods implementations  
  
   refresh(){
-    this.listComponent.rowSelection.clear()
+    this.assertListComponent.rowSelection.clear()
     this.setEditMode()
     if (this.sortOrder) 
       this.setOrder(this.sortOrder)
@@ -290,8 +305,8 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
       complete : () => {
         this.pageCeil = Math.round(this.totalRecCount / this.pageSize)
         this.dataSource.data = this.recordSet.map( 
-          (entity : Entity, index : number) => {
-            var row = new ListRow(entity, this.columnsMap, index)
+          (entity : EntityLiteral, index : number) => {
+            var row = new ListRow(entity, this.assertFieldsMdMap, index)
             return row
           }
         )
@@ -308,18 +323,19 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
   onNew(){
     if (this.isInsertMode)
       return
-    this.addRowAt(this.listComponent.getNewRowIndex())
+    this.addRowAt(this.assertListComponent.getNewRowIndex())
   }
 
   protected addRowAt(rowIndex : number){
-    this.listComponent.rowSelection.clear()
-    this._recService.initData(true)
-    this._recService.setPrimarykeysFromFilter() 
-    this._recService.afterInit()
+    const rec = this.assertRecService
+    this.assertListComponent.rowSelection.clear()
+    rec.initData(true)
+    rec.setPrimarykeysFromFilter() 
+    rec.afterInit()
     .pipe(untilDestroyed(this))
     .subscribe(
       entity => {
-        const datasourceRow = new ListRow(entity, this.columnsMap, rowIndex) 
+        const datasourceRow = new ListRow(entity, this.assertFieldsMdMap, rowIndex) 
         datasourceRow.prepared = true
         var data = this.dataSource.data 
         this.recordSet.splice(rowIndex, 0, entity)
@@ -339,22 +355,23 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
    * we insert only, if the primary key is defined. the other validations are suppressed?
    * @param datasourceRow 
    */
-  tryInsert(saveRequest : SaveRequestEvent<Entity>) : boolean {
+  tryInsert(saveRequest : SaveRequestEvent) : boolean {
     const rowIndex = saveRequest.pageData.index
     try{
       const xRecordset = this.recordSet[rowIndex]
-      var row = {} as Entity
-      this.colMetadata.forEach(
+      var row = {} as EntityLiteral
+      this.fieldMd.forEach(
         (colMeta, i) => {
           if (colMeta.name !== ListRow.statusColumn){
             const value = saveRequest.pageData[colMeta.name as string]
-            row[colMeta.name] = colMeta.javaToApiType? colMeta.javaToApiType(value) : value
+            row[colMeta.name as string] = colMeta.javaToApiType? colMeta.javaToApiType(value) : value
           }
       })
       
       Object.assign(this.rec, xRecordset, row) 
-      const pkfields = this.getPrimaryKeyFields() //check if primary keys are defined
-      if (!pkfields)  return false
+      const pkfields = this.primaryKeyFields //check if primary keys are defined
+      if (isEmpty(pkfields))  
+        return false
       
       this.insert()
       .subscribe({
@@ -365,10 +382,10 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
         error: error => { throw error },
         complete: () => { 
           //determin the pageIndex of the new record
-          var rec2 = EntityService.create(this.injector, this.entityName) as EntityService<Entity>
-          rec2.copyFilters(this._recService) // including filters and order
+          var rec2 = EntityService.create(this.injector, this.entityName as string) as EntityService<EntityLiteral>
+          rec2.copyFilters(this.assertRecService) // including filters and order
           for(let [key, value] of Object.entries(pkfields)) 
-            rec2.setFilter(key as keyof Entity, `<=${value}`)
+            rec2.setFilter(key, `<=${value}`)
           forkJoin([this.count(), rec2.count()])
             .subscribe({
               next : ([countAll, countUntil]) => {
@@ -376,7 +393,7 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
                 this.currPageNo = Math.floor(countUntil / this.pageSize)+1
               },
               error: error => { 
-                if (saveRequest.afterSavedObserver)
+                if (saveRequest.afterSavedObserver?.error)
                   saveRequest.afterSavedObserver.error(error)
                 else  
                   throw error 
@@ -393,23 +410,23 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
       })
     }
     catch(error){
-      this.handleServerError(error)
+      this.handleServerError(error as Error);
       return false
     }
     return true
   }
 
-  tryUpdate(saveRequest : SaveRequestEvent<Entity>) :boolean{
+  tryUpdate(saveRequest : SaveRequestEvent) :boolean{
     if (saveRequest.pageData.isNew) 
       return this.tryInsert(saveRequest)
     
     try{
-      var row = {} as Entity
+      var row = {} as EntityLiteral
       const xRec = this.recordSet[saveRequest.pageData.index]
-      this.colMetadata.forEach( (colMeta, i) => {
+      this.fieldMd.forEach( (colMeta, i) => {
         if (colMeta.name !== ListRow.statusColumn){
           const value = saveRequest.pageData[colMeta.name as string]
-          row[colMeta.name] = colMeta.javaToApiType? colMeta.javaToApiType(value) : value
+          row[colMeta.name as string] = colMeta.javaToApiType? colMeta.javaToApiType(value) : value
         }
       })
       Object.assign(this.rec, xRec, row) // merge the new values with xValues into the rec
@@ -417,8 +434,8 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
       this.update()
       .subscribe( 
         updatedRow => { // Update the recordset       
-          const pk  = {} // find the row to update by primarykey
-          for(let key of this.entityMetadata.primaryKeys) pk[key as string] = updatedRow[key]
+          const pk  = {} as EntityLiteral // find the row to update by primarykey
+          for(let key of (this.entityMetadata as EntityMetadata).primaryKeys) pk[key as string] = updatedRow[key]
           const rowIndex = this.recordSet.findIndex( 
             row => Object.entries(pk).every( ([key,value]) => row[key] === value )
           )
@@ -426,7 +443,7 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
           saveRequest.pageData.clearDirty()
         },
         error => {  
-          if (saveRequest.afterSavedObserver) 
+          if (saveRequest.afterSavedObserver?.error)
             saveRequest.afterSavedObserver.error(error) 
           else throw error 
         },
@@ -438,7 +455,7 @@ export abstract class ListPage<Entity> extends Page<Entity> implements OnInit, A
      //this.scollToIndex = undefined  
     }
     catch(error){
-      this.handleServerError(error)
+      this.handleServerError(error as Error)
       return false
     }
     return true

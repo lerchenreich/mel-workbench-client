@@ -7,34 +7,32 @@ import { ValidationErrors } from '@angular/forms'
 
 import { FilterCondition, ExpressionType, Replace, IQueryCondition, FilterOperators , FieldTypes} from 'mel-common'
 
-import { ClientExpression } from './filter-expression'
+import { ClientExpression } from './client-condition-expression'
+import { stringify } from 'querystring'
 
-export type FieldConditions<Entity extends Object> = { [P in keyof Entity]? : ClientCondition }
+export type FieldConditions<Entity extends Object> = { [P in keyof Entity]? : ClientFilterCondition }
 export interface ITranslateOptions {
   path : string
   service : TranslateService
 }
-export class ClientCondition extends FilterCondition<ClientExpression> {
+export class ClientFilterCondition extends FilterCondition<ClientExpression> {
 
-    constructor(operator : FilterOperators, operands : ExpressionType[], columnType : FieldTypes, private _translateOptions? : ITranslateOptions){
+    constructor(operator : FilterOperators, operands : ExpressionType[], columnType : FieldTypes, public translateOptions? : ITranslateOptions){
       super(operator, operands, columnType)
     }
     protected createExpression(inputOrOperator? : string | FilterOperators, operands? : ExpressionType[]) : ClientExpression {
       return new ClientExpression(this._columnType, inputOrOperator, operands)
     }
   
-    public get translateOptions() : ITranslateOptions { return this._translateOptions }
-    public set translateOptions(newTranslateOptions : ITranslateOptions){ this._translateOptions = newTranslateOptions }
-  
     /**
      * Formats the condition into an api-conform Where-condition
      */
     public toQueryFormat() : IQueryCondition {     
       if (this.isComplex) {
-        var complexCondition : string = this._complexInput 
+        var complexCondition : string = this._complexInput as string
         for(let expression of this._expressions){
           const apiCondition = expression.queryCondition
-          complexCondition = complexCondition.replace(expression.input, `${apiCondition.op} ${apiCondition.opd.join(',')}` )
+          complexCondition = complexCondition.replace(expression.input, `${apiCondition.op} ${apiCondition.opd?.join(',')}` )
         }
         return { op : FilterOperators.cplx, opd : [complexCondition] }
       }
@@ -58,7 +56,7 @@ export class ClientCondition extends FilterCondition<ClientExpression> {
       if (!this.hasExpressions) 
         return ''
       if (this.isComplex){
-          var friendyString : string = this._complexInput
+          var friendyString = this._complexInput as string
           for (let expression of this._expressions)
             friendyString = friendyString.replace(expression.input, this.translateEnum(expression))
           return friendyString.trim()
@@ -69,24 +67,24 @@ export class ClientCondition extends FilterCondition<ClientExpression> {
     }
   
     private translateEnum(expression : ClientExpression) : string {
-      if (this._translateOptions && (this.columnType == FieldTypes.Enum) ){
-        const key = this._translateOptions.path+'.'+ expression.operands[0]   // an enum ist alltime stored in operand[0]
-        var translated = this._translateOptions.service.instant( key ) 
+      if (this.translateOptions && (this.columnType == FieldTypes.Enum) ){
+        const key = this.translateOptions.path+'.'+ expression.operands[0]   // an enum ist alltime stored in operand[0]
+        var translated = this.translateOptions.service.instant( key ) 
         return translated === key ? expression.operands[0] : translated
       }
       else 
         return expression.friendly
     }
 
-    translateEnumsInv() : ClientCondition{
-      if (this._translateOptions && this.columnType == FieldTypes.Enum ){
+    translateEnumsInv() : ClientFilterCondition{
+      if (this.translateOptions && this.columnType == FieldTypes.Enum ){
         for (let expression of this._expressions) { // an enum ist alltime stored in operand[0]
-          const key = this._translateOptions.path+'Inv.'+ expression.operands[0]
-          const translated = this._translateOptions.service.instant(key)
+          const key = this.translateOptions.path+'Inv.'+ expression.operands[0]
+          const translated = this.translateOptions.service.instant(key)
           if (translated !== key)
             expression.operands[0] = translated
         }
-        this._translateOptions = undefined // translate once
+        this.translateOptions = undefined // translate once
       }
       return this
     }
@@ -94,9 +92,9 @@ export class ClientCondition extends FilterCondition<ClientExpression> {
      * Validetes the brackets and all expressions 
     */
     public validate() : ValidationErrors | null {
-      var _validationErrors = {}
+      var _validationErrors : { required? : string, bracketsCheck? : string } = { }
       if ( !this.hasExpressions ) {
-        _validationErrors['required'] = `Conditionis required`
+        _validationErrors.required = `Conditionis required`
         return _validationErrors 
       }
       // validate all expressions
@@ -104,7 +102,7 @@ export class ClientCondition extends FilterCondition<ClientExpression> {
         _validationErrors = Object.assign(_validationErrors, expression.validate())
       }
       if (this.isComplex){
-        var toValidate = new Replace(this._complexInput.trim(), ["\\(", "\\)"]).replaced
+        var toValidate = new Replace((this._complexInput as string).trim(), ["\\(", "\\)"]).replaced
         do {
           toValidate = toValidate.trim()
           var closingBracketIndex = toValidate.indexOf(')')
@@ -114,15 +112,15 @@ export class ClientCondition extends FilterCondition<ClientExpression> {
               toValidate = toValidate.substring(0, openBracketIndex) + toValidate.substring(closingBracketIndex+1)
             }
             else {
-              _validationErrors['bracketsCheck'] = `Missing "(" for closing Bracket at index ${closingBracketIndex}` 
+              _validationErrors.bracketsCheck = `Missing "(" for closing Bracket at index ${closingBracketIndex}` 
               return _validationErrors
             }
           }
         } while(closingBracketIndex >= 0)
       
         const regExprs = toValidate.match(/\(/g)
-        if (regExprs?.length > 0) 
-          _validationErrors['bracketsCheck'] = `Missing ${regExprs.length}  closing brackets ")" for ${regExprs.length} opening bracket(s)`
+        if (regExprs !== null && regExprs.length) 
+          _validationErrors.bracketsCheck = `Missing ${regExprs.length}  closing brackets ")" for ${regExprs.length} opening bracket(s)`
       }
      
       return isEmpty(_validationErrors)? null : _validationErrors 

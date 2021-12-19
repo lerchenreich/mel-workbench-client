@@ -1,7 +1,9 @@
 import { CardFieldComponent } from '../controls/fields/cardfield/cardfield.component'
 import { ListFieldComponent } from '../controls/fields/listfield/listfield.component'
-import { Field } from '../controls/fields/field'
-import { FieldMetadata } from '../../types'
+import { Field }              from '../controls/fields/field'
+import { EntityLiteral, FieldsMdMap, ObjectLiteral } from '../../types'
+
+
 
 /**
  * Baseclass of Page-Data as an interface between the user-in- and outputs and the entityservice
@@ -13,37 +15,40 @@ import { FieldMetadata } from '../../types'
  * and the field-componenent corresponding to the datafields
  * A datafield is dirty, when the value of the validation-record is different to the xRec
  */
-export abstract class PageData<Entity, Component extends Field<Entity>> {
-  private _prepared : boolean
-  private _new : boolean
+export abstract class PageData<Entity extends EntityLiteral, FieldComponent extends Field> extends ObjectLiteral {
+  private _prepared : boolean = false
+  private _new : boolean = false
   
-  constructor(entity : Entity, colMetadata : Map<keyof Entity, FieldMetadata<Entity>>){
+  constructor(entity : Entity, fieldMd : FieldsMdMap){
+    super()
     //this.xRecRef = entity
     for(let [key, value] of Object.entries(entity)) {
-      const md = colMetadata.get(key as keyof Entity)
+      const md = fieldMd.get(key)
       if (md)
-        this[key] = value === undefined? md.default : md.format(value)
+        this[key] = (value === undefined? md.default||'' : md.format? md.format(value) : value)
     }
     this.validationRec = entity
   }
 
-  abstract get fieldComponents() : Iterable<Component>
-  abstract addFieldComponent(item : Component)
+  abstract get fieldComponents() : Iterable<FieldComponent>
+  abstract addFieldComponent(item : FieldComponent) : PageData<Entity, FieldComponent>
 
   public static readonly statusColumn = "__status__" 
   public get __status__() : string { return (this.isNew ? '*' : '') + (this.isDirty ? '*' : '') }
 
   // This record is only used for validation
-  protected _vRec : Entity = undefined
-  protected _xRecRef : Entity = undefined
-  get validationRec() : Entity { return this._vRec }
-  set validationRec(rec : Entity) { 
+  protected _vRec? : EntityLiteral
+  public get assertVRec(): EntityLiteral { if (this._vRec) return this._vRec; throw new Error('_vRec is undefined')}  
+  protected _xRecRef? : EntityLiteral
+  protected get assertXRecRef(): EntityLiteral { if (this._xRecRef) return this._xRecRef; throw new Error('_XRecRef is undefined')}  
+  get validationRec() : EntityLiteral|undefined { return this._vRec }
+  set validationRec(rec : EntityLiteral|undefined) { 
     this._vRec = Object.assign({}, rec)
     this._xRecRef = rec
   }
   
-  isFieldDirty(fieldName : keyof Entity) : boolean {
-    return !Object.is(this._vRec[fieldName], this._xRecRef[fieldName])
+  isFieldDirty(fieldName : string) : boolean {
+    return !Object.is(this.assertVRec[fieldName], this.assertXRecRef[fieldName])
   }
   public clearDirty() {
     this._new = false
@@ -67,37 +72,44 @@ export abstract class PageData<Entity, Component extends Field<Entity>> {
   }
   public get index() { return -1 }
   public get isDirty() : boolean { 
-    return Array.from(this.fieldComponents).some( item => this._vRec[item.name] !== this._xRecRef[item.name]) 
+    return Array.from(this.fieldComponents).some( item => this.assertVRec[item.name] !== this.assertXRecRef[item.name]) 
   } 
  
   public get isValid() : boolean { return Array.from(this.fieldComponents).every( field => field.isValid ) }
-  public get firstInvalid() : Component { return Array.from(this.fieldComponents).find(field => !field.isValid) }
+  public get firstInvalid() : FieldComponent | undefined { return Array.from(this.fieldComponents).find(field => !field.isValid) }
 
   public isDirtyAndValid() :boolean {
     return this.isDirty && this.isValid//.validate()
   }
 }
-export class CardData<Entity> extends PageData<Entity, CardFieldComponent> {
-  private fields = new Map<keyof Entity, CardFieldComponent>() 
+/**
+ * This class takes the fields of the Card, especially the CardFieldcomponent
+ */
+export class CardData<Entity extends EntityLiteral> extends PageData<Entity, CardFieldComponent> {
+  private fields = new Map<string, CardFieldComponent>() 
   get fieldComponents() : Iterable<CardFieldComponent> { return this.fields.values()}
   addFieldComponent(field : CardFieldComponent){
-    this.fields.set(field.name as keyof Entity, field)
+    this.fields.set(field.name, field)
+    return this
   }
-
 }
-export class ListRow<Entity> extends PageData<Entity, ListFieldComponent>{
+/**
+ * This class take the fields of a row in a list
+ */
+export class ListRow<Entity extends EntityLiteral> extends PageData<Entity, ListFieldComponent>{
   private _index : number
 
   private cells : ListFieldComponent[] = []
   get fieldComponents() : Iterable<ListFieldComponent> { return this.cells}
   
-  constructor(entity : Entity, colMetadata : Map<keyof Entity, FieldMetadata<Entity>>, index : number){
-    super(entity, colMetadata)
+  constructor(entity : Entity, fieldMd : FieldsMdMap, index : number){
+    super(entity, fieldMd)
     this._index = index
   }
   
   addFieldComponent(field : ListFieldComponent){
     this.cells.push(field)
+    return this
   }
 
   public get index() { return this._index }

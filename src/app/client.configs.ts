@@ -4,26 +4,27 @@ import * as REST from './rest.config'
 
 
 export class ClientConfig  {
+  private readonly _rootEndpoint : string
+  private readonly _restEndpoint : string
+  private readonly _restMasterEndpoint : string 
+  
+  public appCode? : string
+  private _companyId? : number 
+
   constructor( private _host: string, private _port : number, public annotation : string ){
     this._rootEndpoint = `http://${_host}:${_port}`
     this._restEndpoint = `${this._rootEndpoint}/${ROOT_PATH}/`
-    this.restMasterEndpoint = this._restEndpoint + MASTER_PATH 
+    this._restMasterEndpoint = this._restEndpoint + MASTER_PATH 
   } 
-  private readonly _rootEndpoint : string
-  private readonly _restEndpoint : string
-  readonly restMasterEndpoint    : string 
   
-  private _appCode : string
-  private _companyCode : string
-  set appCode(newCode : string) { this._appCode = newCode }
-  get appCode() : string { return this._appCode }
-  set companyCode(newCode : string) { this._companyCode = newCode }
+  set companyId(newId : number) { this._companyId = newId }
   
-  get restCompanyEndpoint()   : string { return this._restEndpoint + this._companyCode }
-  get restAppEndpoint()       : string { return this._restEndpoint + this._appCode }
-   
-  public get host() : string { return this._host }
-  public get port() : number { return this._port }
+  get restCompanyEndpoint()   : string { return this._restEndpoint + this._companyId }
+  get restAppEndpoint()       : string { return this._restEndpoint + this.appCode }
+  get restMasterEndpoint()    : string { return this._restMasterEndpoint }
+  
+  get host() : string { return this._host }
+  get port() : number { return this._port }
 
 }
 

@@ -1,6 +1,9 @@
+/*
 
-import { ValidationFunc } from 'src/app/metadata/validation';
+
+import { ValidationFunc } from 'mel-common';
 import { MelTable } from './mel-table';
 
-export var name : ValidationFunc<MelTable> = undefined
-export var active : ValidationFunc<MelTable> = undefined
+export var name : ValidationFunc<MelTable> 
+export var active : ValidationFunc<MelTable> 
+*/

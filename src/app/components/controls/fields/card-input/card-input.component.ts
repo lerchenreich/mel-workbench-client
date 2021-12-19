@@ -44,9 +44,9 @@ export class CardInputComponent extends BaseInputComponent implements AfterViewI
   }
   inputChanged = new EventEmitter<any>()
 
-  @Input() caption : string 
-  @Input() placeholder : string 
-  @Input() editable : boolean
+  @Input() caption : string = ''
+  @Input() placeholder : string = ''
+  @Input() editable : boolean = false
   @Input() set changedObs(obs : NextObserver<string|boolean>){
     if(obs) 
       this.inputChanged.pipe(untilDestroyed(this)).subscribe(obs)

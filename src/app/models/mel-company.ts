@@ -1,23 +1,35 @@
-import { FieldTypes } from "mel-common"
-import { Column, Table } from "src/app/metadata/entities"
+import { FieldTypes, MelFieldClasses } from "mel-common"
+import { Field, Table } from "src/app/metadata/entities"
+import { EntityLiteral } from "../types"
 
 
 @Table()
-export class MelCompany {
+export class MelCompany extends EntityLiteral {
 
-  @Column({ type : FieldTypes.String, primaryKeyNo : 1})
-  Company    : string
+  @Field({ type : FieldTypes.Integer, class : MelFieldClasses.Normal, primaryKeyNo : 1})
+  Id?    : number
 
-  @Column({ type : FieldTypes.String })
+  @Field({ type : FieldTypes.String, class : MelFieldClasses.Normal })
+  Name?    : string
+
+  @Field({ type : FieldTypes.String, class : MelFieldClasses.Normal })
   DbName?    : string
 
-  @Column({ type : FieldTypes.String })
-  Version : string
-
-  @Column({ type : FieldTypes.Enum, enumValues : ['Active', 'Inactive', 'DbExists'] }) 
-  State : string
+  @Field({ type : FieldTypes.Enum, class : MelFieldClasses.Normal, enumValues : ['Active', 'Inactive', 'DbExists'] }) 
+  State? : string
   
+  @Field( { type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+  Major? : number
+
+  @Field( { type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+  Minor? : number
+
+  @Field( { type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+  Build? : number
+
+ 
   constructor(init? : Partial<MelCompany>){
+    super()
     if (init)
       Object.assign(this, init)
   }

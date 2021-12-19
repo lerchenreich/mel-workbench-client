@@ -10,6 +10,7 @@ import { Field} from '../field';
 import { FieldTemplates, TemplateService } from 'src/app/template.service';
 import { FieldContext, FieldNavigationEvent, RowChangedEvent} from 'src/app/components/core/types';
 import { ListRow } from '../../../core/page-data';
+import { EntityLiteral } from 'src/app/types';
 
 
 export type NavigationKeys = 'Tab'|'ShiftTab'|'ArrowUp'|'ArrowDown'|'Enter' 
@@ -22,17 +23,17 @@ export enum FieldModes  {'view', 'edit'}
   <span class="melError" [style.opacity]="errorText.length">{{errorText}}</span>`
 })
 @UntilDestroy()
-export class ListFieldComponent extends Field<any> implements OnInit, AfterViewInit {
+export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
   constructor(host: ElementRef,  
               translate : TranslateService, 
               templateService : TemplateService){  
     super(host, translate)
-    this.editInput    = templateService.get(FieldTemplates.listInput)
-    this.editEnum     = templateService.get(FieldTemplates.listEnum)
-    this.editBoolean  = templateService.get(FieldTemplates.listBoolean)
-    this.viewBoolean  = templateService.get(FieldTemplates.viewBoolean)
-    this.viewEnum     = templateService.get(FieldTemplates.viewEnum)
-    this.viewInput    = templateService.get(FieldTemplates.viewInput)
+    this.editInput    = templateService.assertGet(FieldTemplates.listInput)
+    this.editEnum     = templateService.assertGet(FieldTemplates.listEnum)
+    this.editBoolean  = templateService.assertGet(FieldTemplates.listBoolean)
+    this.viewBoolean  = templateService.assertGet(FieldTemplates.viewBoolean)
+    this.viewEnum     = templateService.assertGet(FieldTemplates.viewEnum)
+    this.viewInput    = templateService.assertGet(FieldTemplates.viewInput)
   }
   
   private editInput     : TemplateRef<any>
@@ -42,12 +43,12 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
   private viewInput     : TemplateRef<any>
   private viewEnum      : TemplateRef<any>
 
-  private tdElement : HTMLElement
-  private trElement : HTMLElement
+  private tdElement : HTMLElement | null = null
+  private trElement : HTMLElement | null = null
   private editMode = new Subject()
   private editMode$ = this.editMode.asObservable() 
   private _mode: FieldModes = FieldModes.view 
-  private _type : FieldTypes
+  private _type? : FieldTypes
 
   initializationEmitter = new EventEmitter<ListFieldComponent>()
   navigationEmitter     = new EventEmitter<FieldNavigationEvent>()
@@ -77,13 +78,14 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
   }
   get inputValue() : string | boolean { 
     var inputElement 
-    if (this._type == FieldTypes.Enum)
-      inputElement = $(this.rootElement).find('mat-select')?.get(0).attributes['ng-reflect-model']
+    if (this._type == FieldTypes.Enum){
+      const matSelect = $(this.assertRootElement).find('mat-select').get(0)
+      inputElement = matSelect?.attributes.getNamedItem('ng-reflect-model') as unknown as HTMLInputElement
+    } 
     else 
-      inputElement = $(this.rootElement).find('input')?.get(0) as HTMLInputElement
+      inputElement = $(this.assertRootElement).find('input').get(0) as HTMLInputElement
     if (inputElement == undefined){
-      console.error(`InputElement for ${this.toString()} is undefined`)
-      return undefined
+      throw new Error(`InputElement for ${this.toString()} is undefined`)
     }
     return inputElement.type === 'checkbox' ? inputElement.checked : inputElement.value
   }
@@ -148,7 +150,7 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
     if (ctx.rowChangedObs)
       this.rowChangedEmitter.pipe(untilDestroyed(this)).subscribe(ctx.rowChangedObs)
     
-    this._type = ctx.meta.type
+    this._type = ctx.meta?.type
     
     if (this._type == FieldTypes.Boolean)
       this.ctx.changedObs = { 
@@ -165,14 +167,17 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
    */
   ngOnInit(): void {
     //console.info(`${this.constructor.name}.OnInit.Field(${this.name})`)
-    
     super.ngOnInit()
-    this.tdElement = this.rootElement.parentElement as HTMLElement
-    while(this.tdElement.nodeName != 'TD') 
+    this.tdElement = this.assertRootElement.parentElement
+    while(this.tdElement && this.tdElement.nodeName != 'TD') 
       this.tdElement = this.tdElement.parentElement
-    this.trElement = 
-      this.tdElement.parentElement as HTMLElement
-    while(this.trElement.nodeName != 'TR') this.trElement = this.trElement.parentElement
+    if (this.tdElement){
+      this.trElement = this.tdElement.parentElement
+      while(this.trElement && this.trElement.nodeName != 'TR') 
+        this.trElement = this.trElement.parentElement
+    }
+    if (!this.trElement || !this.tdElement)
+      throw new Error('tdElement of trElement undefined')
   }
 
   ngAfterViewInit() {
@@ -193,11 +198,11 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
       
   private viewModeHandler() {
     //listen to the <td>-click-event, because if the input-element is empty it's difficult to hit upon the element
-    fromEvent(this.tdElement, 'click') 
+    fromEvent(this.tdElement as HTMLElement, 'click') 
     .pipe( 
       //delay(1),
       untilDestroyed(this) )
-    .subscribe( (event : MouseEvent) => {
+    .subscribe( (event : Event) => {
       if (event.defaultPrevented) 
         return
       if (this.editable){
@@ -213,23 +218,27 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
   private editModeHandler() {
 
     function targetRowId(child : HTMLElement) : number { 
-      var parent = child
-      do {
-        if (parent.tagName === 'TABLE') break
-        if (parent.tagName === 'TR')
-          return Number(parent.id)
-        parent = parent.parentElement
-      } while (parent)
+      var parent = child as HTMLElement | null
+      if (parent){
+        do {
+          if (parent.tagName === 'TABLE') break
+          if (parent.tagName === 'TR')
+            return Number(parent.id)
+          parent = parent.parentElement
+        } while (parent)
+      }
       return -1
     }
     function targetColId(child : HTMLElement) : number { 
-      var parent = child
-      do {
-        if (parent.tagName === 'TR') break
-        if (parent.tagName === 'TD')
-          return Number(parent.id)
-        parent = parent.parentElement
-      } while (parent)
+      var parent = child as HTMLElement | null
+      if (parent){
+        do {
+          if (parent.tagName === 'TR') break
+          if (parent.tagName === 'TD')
+            return Number(parent.id)
+          parent = parent.parentElement
+        } while (parent)
+      }
       return -1
     }
      
@@ -263,7 +272,7 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
       switchMapTo(this._type == FieldTypes.Boolean ? clickOutsideCheckbox$ :  clickOutside$),
       untilDestroyed(this)
     )
-    .subscribe( async (event : MouseEvent) => { 
+    .subscribe( async (event : Event) => { 
       const value = this.inputvalueToPageData(this.inputValue)
       if (this.wasTouched || this.isDirty){
         if (await this.validate().catch(error =>  event.preventDefault())){
@@ -293,7 +302,7 @@ export class ListFieldComponent extends Field<any> implements OnInit, AfterViewI
 
   // Helpers
   toString() : string {
-    return `ListField (row:${this.trElement.id}, col:${this.tdElement.id} Mode: ${this.prettyMode(this.mode)})`
+    return `ListField (row:${(this.trElement  as HTMLElement).id}, col:${(this.tdElement as HTMLElement).id} Mode: ${this.prettyMode(this.mode)})`
   }
   prettyMode(mode : FieldModes) : string { return (mode==FieldModes.view?"view":"edit")+'mode'} 
   /** 

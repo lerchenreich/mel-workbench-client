@@ -6,14 +6,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { map } from 'rxjs/operators'
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
-import { TableMetadata, SqlToFieldtypes, ColumnMetadata } from 'mel-common'
+import { TableMetadata, sqlToFieldtypesMap} from 'mel-common'
 
 import { ListRouted } from '../../core/list.routed';
 import { MelTable } from '../../../models/mel-table';
 import { AppTablesDialogComponent } from '../../dialogs/apptables-dialog/apptables-dialog.component';
 import { EntityService } from '../../../services/core/entityService';
 import { forkJoin, Observable, BehaviorSubject, Subject} from 'rxjs';
-import { ColumnInfo } from '../../../types'
+import { FieldInfo } from '../../../types'
 import { MelField } from '../../../models/mel-field'
 import { MelFieldService } from '../../../services/melservices';
 import { DialogButtons, IMessageDialogData, MessageDialogComponent, MessageResults } from '../../dialogs/message-dialog/message-dialog.component';
@@ -52,8 +52,8 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
    * new tables are created with their columns of course
    * @param $event 
    */
-  importTables($event){
-    var tableNames = this.listComponent.selectedRowIndices.length? this.listComponent.selectedRowIndices.map( rowIndex => this.recordSet[rowIndex].Name ) : []
+  importTables($event:any){
+    var tableNames = (this.listComponent?.selectedRowIndices.map( rowIndex => this.recordSet[rowIndex].Name ) || []) as string[]
     if (tableNames.length){
       var dlgData : IMessageDialogData  = {
         title : 'Message.Import.Metadata.Title',
@@ -100,67 +100,70 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
     this.appService.getAppTablesMetadata( { database:'', columnInfo : true, condition : ` IN ('${tableNames.join("','")}')` } )
   //])
     .pipe(untilDestroyed(this))
-    .subscribe( (tablesMetadata) => {
-        var dlgConfig : MatDialogConfig = undefined
-        var dlgRef : MatDialogRef<ProgressDialogComponent>
-        if (tablesMetadata.length > 3){
-          dlgConfig = { data : { max : tablesMetadata.length, textType : "dark", type : "success", height : "3em" }, hasBackdrop : true, disableClose : true } 
-          dlgRef = this.dialog.open(ProgressDialogComponent, dlgConfig)
-        }
-        var tablesMetadataIterator = new BehaviorSubject<TableMetadata>(tablesMetadata.pop())
-        tablesMetadataIterator.asObservable()
-        .pipe(untilDestroyed(this))
-        .subscribe(
-          tableMetadata =>  {
-            if (tableMetadata) {
-              if (dlgConfig){
-                dlgConfig.data.title = 'Dialog.MetadataImport.ProgressTitle'
-                dlgConfig.data.label = tableMetadata.Name
-                dlgConfig.data.current += 1
-              }
-              this.rec.Name = tableMetadata.Name
-              this.get().subscribe( 
-                melTable => { 
-                  if (melTable) 
-                    this.upsertMelColumns(tableMetadata)
-                      .pipe(untilDestroyed(this))
-                      .subscribe( () => {
-                       // this.upsertTableRelations(sqlTable)
-                        tablesMetadataIterator.next(tablesMetadata.pop())
-                      })
-                  else {
-                    this.rec.Name = tableMetadata.Name 
-                    /*this.rec[PrimaryIndex] = 
-                      sqlTable.columns
-                        .filter(colInfo => colInfo.primaryKey)
-                        .map(colInfo => colInfo.name)
-                        .join(',')
-                    */   
-                    this.insert().subscribe( { 
-                      error: error => this.alertError(error), 
-                      complete: () => this.upsertMelColumns(tableMetadata)
+    .subscribe( {
+      next : tablesMetadata => {
+        if (tablesMetadata.length > 0){
+          var dlgConfig : MatDialogConfig 
+          var dlgRef : MatDialogRef<ProgressDialogComponent>
+          if (tablesMetadata.length > 3){
+            dlgConfig = { data : { max : tablesMetadata.length, textType : "dark", type : "success", height : "3em" }, hasBackdrop : true, disableClose : true } 
+            dlgRef = this.dialog.open(ProgressDialogComponent, dlgConfig)
+          }
+          var tablesMetadataIterator = new BehaviorSubject<TableMetadata>(tablesMetadata.pop() as TableMetadata)
+          tablesMetadataIterator.asObservable()
+          .pipe(untilDestroyed(this))
+          .subscribe( {
+            next : tableMetadata =>  {
+              if (tableMetadata) {
+                if (dlgConfig){
+                  dlgConfig.data.title = 'Dialog.MetadataImport.ProgressTitle'
+                  dlgConfig.data.label = tableMetadata.Name
+                  dlgConfig.data.current += 1
+                }
+                this.rec.Name = tableMetadata.Name
+                this.get().subscribe( 
+                  melTable => { 
+                    if (melTable) 
+                      this.upsertMelColumns(tableMetadata)
                         .pipe(untilDestroyed(this))
-                        .subscribe(() => {
-                         // this.upsertTableRelations(sqlTable)
-                          tablesMetadataIterator.next(tablesMetadata.pop())
-                        }) 
-                    })
-                  }
-                },
-                err => { console.error(err)}
-                
-              )
+                        .subscribe( () => {
+                        // this.upsertTableRelations(sqlTable)
+                          tablesMetadataIterator.next(tablesMetadata.pop() as TableMetadata)
+                        })
+                    else {
+                      this.rec.Name = tableMetadata.Name 
+                      /*this.rec[PrimaryIndex] = 
+                        sqlTable.columns
+                          .filter(colInfo => colInfo.primaryKey)
+                          .map(colInfo => colInfo.name)
+                          .join(',')
+                      */   
+                      this.insert().subscribe( { 
+                        error: error => this.alertError(error), 
+                        complete: () => this.upsertMelColumns(tableMetadata)
+                          .pipe(untilDestroyed(this))
+                          .subscribe(() => {
+                          // this.upsertTableRelations(sqlTable)
+                            tablesMetadataIterator.next(tablesMetadata.pop() as TableMetadata)
+                          }) 
+                      })
+                    }
+                  },
+                  err => { console.error(err)}
+                  
+                )
+              }
+              else {
+                if (dlgRef) dlgRef.close()
+                this.snack(this.translate.instant("Message.Import.Metadata.Done"))
+                this.refresh() 
+              }
             }
-            else {
-              if (dlgRef) dlgRef.close()
-              this.snack(this.translate.instant("Message.Import.Metadata.Done"))
-              this.refresh() 
-            }
-          }  
-        ) // subscribe
+          }) // subscribe
+        }
       },
-      error => this.alertError(error)
-    )
+      error : error => this.alertError(error)
+    })
   }
  
   upsertTableRelations(md : TableMetadata){
@@ -176,7 +179,7 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
     var columnObservables : Observable<MelField>[] = []
     
     var keyNo = 0
-    var colInfos : ColumnInfo[] = md.Columns.sort( (a,b) => a.SequenceNo - b.SequenceNo) 
+    var colInfos : FieldInfo[] = md.Columns.sort( (a,b) => a.SequenceNo - b.SequenceNo) 
     for(let colInfo of colInfos)
       if (!!colInfo.PrimaryKey) colInfo.PrimaryKeyNo =  ++keyNo 
      
@@ -208,7 +211,7 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
     return result$
   }
 
-  melColumnFromColInfo(melColumn : MelField, colInfo : ColumnInfo) : MelField{
+  melColumnFromColInfo(melColumn : MelField, colInfo : FieldInfo) : MelField{
     if (colInfo.EnumValues)
       melColumn.EnumValues = colInfo.EnumValues.join(',')  
     melColumn.IsAutoincrement = colInfo.Generated
@@ -221,12 +224,12 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
     return melColumn
   }
 
-  insertMelColumn(tableName : string, colInfo : ColumnInfo) : Observable<MelField>{
+  insertMelColumn(tableName : string, colInfo : FieldInfo) : Observable<MelField>{
     const colService = EntityService.createFrom(this.melFieldService)
     const datatype = colInfo.ColumnType === 'tinyint(1)' ? 'TINYINT(1)' : colInfo.DataType // spcial case boolean
     var melColumn = new MelField({
       TableName : tableName,
-      Datatype : SqlToFieldtypes[datatype.toUpperCase()],
+      Datatype : sqlToFieldtypesMap.get(datatype.toUpperCase()),
       Updateable : true,
       PrimaryKeyNo : colInfo.PrimaryKeyNo,
       Comment : 'autocreated',
@@ -238,7 +241,7 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
     return colService.insert()
   }
 
-  updateMelColumn(colInfo : ColumnInfo, melColumn : MelField) : Observable<MelField> {
+  updateMelColumn(colInfo : FieldInfo, melColumn : MelField) : Observable<MelField> {
     const colService = EntityService.createFrom(this.melFieldService)
     colService.assignData(Object.assign(colService.data, this.melColumnFromColInfo(melColumn, colInfo)))
     return colService.update()

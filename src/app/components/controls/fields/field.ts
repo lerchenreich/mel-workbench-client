@@ -4,24 +4,30 @@ import { TranslateService } from '@ngx-translate/core';
 
 import * as $ from 'jquery'
 
-import { InputSubType } from '../../../types';
-import { FieldContext, FieldShortcutEvent } from '../../core/types';
+import { EntityLiteral, FieldMetadata, InputSubType, ObjectLiteral } from '../../../types';
+import { PageData } from '../../core/page-data';
+import { FieldContext, FieldShortcutEvent, LookupFor } from '../../core/types';
 
 /**
  * Inputs and validation of all fields
  */
 @Directive()
 @UntilDestroy()
-export class Field<Entity> implements OnInit {
+export class Field implements OnInit {
   constructor(protected host: ElementRef, 
     public translate : TranslateService){  
   }
   static nextId = 0
   
-  protected rootElement : HTMLElement
+  protected rootElement? : HTMLElement
+  protected get assertRootElement() : HTMLElement { 
+    if (this.rootElement) 
+      return this.rootElement; 
+    throw new Error('rootElement is undefined')
+  }
   protected valid : boolean = true
   protected touched : boolean = false
-  public ctx : FieldContext<Entity> = {
+  public ctx : FieldContext<EntityLiteral> = {
     editable : true
   }
   // the errortext to be displayed
@@ -30,38 +36,42 @@ export class Field<Entity> implements OnInit {
     return this._errorText.slice(1) 
   }
 
-  assistEmitter     = new EventEmitter<Field<Entity>>()
+  assistEmitter     = new EventEmitter<Field>()
   shortcutEmitter   = new EventEmitter<FieldShortcutEvent>()
-  touchedEmitter    = new EventEmitter<Field<Entity>>()
+  touchedEmitter    = new EventEmitter<Field>()
   changedEmitter    = new EventEmitter<string|boolean>()
 
-  public get name() : string { return this.ctx.meta.name as string}
-  public get data() : Entity { return this.ctx.data as unknown as Entity}
+  public get name() : string { return this.ctx.meta?.name as string}
+  public get data() : PageData<EntityLiteral, Field> { return this.ctx.data as PageData<EntityLiteral, Field>}
   public get isValid() : boolean { return this.valid }
-  public get isDirty() : boolean { return this.ctx.data.isFieldDirty(this.name as keyof Entity) }
+  public get isDirty() : boolean { return !!this.ctx.data?.isFieldDirty(this.name) }
   public get wasTouched() : boolean { return this.touched }
-  public get validationRec() : Entity { return this.ctx.data.validationRec }
+  public get validationRec() : EntityLiteral { if (this.ctx.data) return this.ctx.data.assertVRec; throw new Error('ctx.data is undefined!')}
 
-  @Input() set context(ctx : FieldContext<Entity>) { // from MelListComponent
-    this.ctx.value = ctx.data[ctx.meta.name as string]
-    this.ctx.editable = !!ctx.meta.editable && (this.ctx.editable === undefined?true: this.ctx.editable)
+  @Input() set context(ctx : FieldContext<EntityLiteral>) { // from MelListComponent
+    if (ctx.data && ctx.meta){
+      this.ctx.value = ctx.data[ctx.meta.name as string]
+      this.ctx.editable = !!ctx.meta.editable && (this.ctx.editable === undefined?true: this.ctx.editable)
+    }
     if (!this.ctx.meta){          // only at the first input
       this.addContext(ctx)
     }
   }
-  // Inputs whcih overwrites the context
+  // Inputs which overwrite the context
   @Input() 
   set editable(b : boolean) { this.ctx.editable = (b==undefined?true:b) && (this.ctx.meta? this.ctx.meta.editable : true) } 
-  get editable() : boolean  { return this.ctx.editable }
+  get editable() : boolean  { return this.ctx.editable || false}
  
   @Input() 
   set subType(s : InputSubType) { this.ctx.subType = s }
-  get subType() { return this.ctx.subType }
+  get subType() : InputSubType { return this.ctx.subType || "none" }
 
   
   @Input()
   set lookupFor(lookupFor : string) {
     if ( lookupFor.lastIndexOf('.') > 0  ){
+      if (!this.ctx.lookupFor)
+        this.ctx.lookupFor = { entity : '', fieldName : ''};
       [this.ctx.lookupFor.entity, this.ctx.lookupFor.fieldName] = lookupFor.split('.', 2)
     }
   } 
@@ -85,9 +95,9 @@ export class Field<Entity> implements OnInit {
 
     this.ctx.meta = ctx.meta
     this.ctx.data = ctx.data
-    this.ctx.subType = this.subType || ctx.meta.display.subType
+    this.ctx.subType = this.subType || ctx.meta?.display?.subType
     
-    this.ctx.data.addFieldComponent(this)
+    this.ctx.data?.addFieldComponent(this)
 }
 
   ngOnInit() : void {
@@ -102,7 +112,7 @@ export class Field<Entity> implements OnInit {
    */
   inputvalueToPageData(value : boolean | string) : string {
     if (value !== undefined) {
-      const meta = this.ctx.meta
+      const meta = this.ctx.meta as FieldMetadata<EntityLiteral>
       // first we have to autocomplete, to validate the correct values (wysiwyg)
       if (typeof value === 'string'){
         if (meta.autocomplete) 
@@ -110,10 +120,11 @@ export class Field<Entity> implements OnInit {
       }
       else 
         value = value ? '1' : '0' // boolean
-      this.touched = this.ctx.data[meta.name as string] !== value
-      this.ctx.data[meta.name as string] = value
-      const parsedValue = meta.parse? meta.parse(value) : value
-      this.validationRec[meta.name as string] = parsedValue
+      const ctxData = this.ctx.data as PageData<EntityLiteral, Field>
+      this.touched = ctxData[meta.name as string] !== value
+      ctxData[meta.name as string] = value
+      const parsedValue = meta.parse? meta.parse(value) : value  as any;
+      ctxData.assertVRec[meta.name as string] = parsedValue
     }
     return value as string
   }
@@ -124,8 +135,9 @@ export class Field<Entity> implements OnInit {
    * return : true if valid
   */
   public async validate(silent : boolean = false) : Promise<boolean> {
-    const rejectHandler = reason => ({ status: 'rejected', reason })
-    const resolveHandler = value => ({ status: 'fulfilled', value })
+
+    const rejectHandler = (reason : any) => ({ status : 'rejected', reason : reason})
+    const resolveHandler = (value : any) => ({ status : 'resolved', value : value })
     function allSettled (promises : Promise<any>[]) {
       const convertedPromises = promises.map(p => Promise.resolve(p).then(resolveHandler, rejectHandler));
       return Promise.all(convertedPromises);
@@ -136,14 +148,14 @@ export class Field<Entity> implements OnInit {
     this.clearError()
 
     return new Promise<boolean>( (resolve, reject) => {
-      if (meta.validators){
+      if (meta?.validators){
         try{
-          allSettled(meta.validators.map(validator => validator(vRec[meta.name], vRec)))
+          allSettled(meta.validators.map(validator => validator(vRec[meta.name as string], vRec)))
           .then( results => {
             results.forEach(result => {
               if(result.status == 'rejected'){
                 if (!silent){
-                  var reason = (result as {status:string, reason:any}).reason
+                  var reason = (result as {status:string, reason : any}).reason
                   if (typeof reason === 'string')
                     this.translate.get(reason).subscribe(translation => this.addErrorText(translation))
                   else {

@@ -2,7 +2,7 @@ import { AfterViewInit, Component, Inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs'
-import { FieldTypes, KeyPair, CreateAppOptions, notBlank, Version } from 'mel-common';
+import { FieldTypes, StringKeyPair, CreateAppOptions, notBlank, Version, MelFieldClasses } from 'mel-common';
 import { fillColumnMetadata } from 'src/app/metadata/entities';
 import { AlertService } from 'src/app/services/alert.service';
 import { AppService } from 'src/app/services/app-service';
@@ -14,16 +14,16 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ModalWaitComponent } from '../dialogs/modal-wait/modal-wait.component';
 import { changeApp } from 'src/app/recents';
-import { FieldMetadata } from '../../types';
+import { EntityLiteral, FieldMetadata } from '../../types';
 
 
-class CreateAppEntity {
+class CreateAppEntity extends EntityLiteral {
   appCode? : string // becomes databasename
   appName?     : string // name of the application
   companyName? : string 
   companyDatabaseName? : string // the datamodel of the application
 }
-
+declare type CreateAppContextMap = Map<keyof CreateAppEntity, FieldContext<CreateAppEntity>>
 @Component({
   selector: 'app-create-app',
   templateUrl: './create-app.component.html',
@@ -32,11 +32,11 @@ class CreateAppEntity {
 @UntilDestroy()
 export class CreateAppComponent implements AfterViewInit {
   
-  appMap : Map<string,string> = new Map<string, string>()
-  contextMap : Map<keyof CreateAppEntity, FieldContext<CreateAppEntity>>
-  metaMap = new Map<keyof CreateAppEntity, FieldMetadata<CreateAppEntity>>()
+  appMap     : Map<string,string> = new Map<string, string>()
+  contextMap : CreateAppContextMap = new Map<keyof CreateAppEntity, FieldContext<CreateAppEntity>>()
+  metaMap = new Map<string, FieldMetadata<CreateAppEntity>>()
   
-  cardData : CardData<CreateAppEntity>
+  cardData? : CardData<CreateAppEntity>
   
   entity : CreateAppEntity = {
     appCode : "newApp",
@@ -45,10 +45,10 @@ export class CreateAppComponent implements AfterViewInit {
     companyDatabaseName : ""
   }
   metadata : FieldMetadata<CreateAppEntity>[] = [
-    { name : "appCode", type : FieldTypes.String, validators : [notBlank, this.validateAppCode.bind(this)]},
-    { name : "appName", type : FieldTypes.String, validators : [notBlank]},
-    { name : "companyName", type : FieldTypes.String, validators : [notBlank]},
-    { name : "companyDatabaseName", type : FieldTypes.Enum, enumValues: [], validators : [notBlank] }
+    { name : "appCode", type : FieldTypes.String, class : MelFieldClasses.None, validators : [notBlank, this.validateAppCode.bind(this)]},
+    { name : "appName", type : FieldTypes.String, class : MelFieldClasses.None, validators : [notBlank]},
+    { name : "companyName", type : FieldTypes.String, class : MelFieldClasses.None, validators : [notBlank]},
+    { name : "companyDatabaseName", type : FieldTypes.Enum, enumValues: [], class : MelFieldClasses.None, validators : [notBlank] }
   ]
   constructor(protected appService : AppService, private modalService : NgbModal, private snackBar : MatSnackBar, protected alert : AlertService, 
               protected router : Router, public translate : TranslateService) {
@@ -64,15 +64,14 @@ export class CreateAppComponent implements AfterViewInit {
       },
       error => {this.alert.alertError(error)},
       () =>  {   
-        this.contextMap = new Map<keyof CreateAppEntity, FieldContext<CreateAppEntity>>()
-        this.metadata.forEach( md => this.metaMap.set(md.name, fillColumnMetadata(md)) )
+        this.metadata.forEach( md => this.metaMap.set(md.name as string, fillColumnMetadata(md)) )
         this.cardData = new CardData<CreateAppEntity>(this.entity, this.metaMap)
-        this.metadata.forEach( md => this.contextMap.set(md.name, {data : this.cardData, meta : md}) )     
+        this.metadata.forEach( md => this.contextMap.set(md.name as string, {data : this.cardData, meta : md}) )     
       }
     )
   }
 
-  context(fieldName : keyof CreateAppEntity) : FieldContext<CreateAppEntity> {
+  context(fieldName : string) : FieldContext<CreateAppEntity> | undefined{
     return this.contextMap.get(fieldName)
   }
 
@@ -91,19 +90,18 @@ export class CreateAppComponent implements AfterViewInit {
     })
   }
  
-  save() {
-    this.cardData.validate()
-    .then( valid => {
-      if (valid){
+  async save() {
+    try{
+      if (this.cardData && await this.cardData.validate()){
+        const vRec = this.cardData?.assertVRec
         const options : CreateAppOptions = {
           dropExistingAppDatabase : true,
-          appCode : this.cardData.validationRec.appCode,
-          appName : this.cardData.validationRec.appName,
+          appCode : vRec.appCode as string,
+          appName : vRec.appName as string,
           version : new Version(1,0,0),
           company : { 
-            name : this.cardData.validationRec.companyName,
-            dbName : this.cardData.validationRec.companyDatabaseName,
-           
+            name    : vRec.companyName as string,
+            dbName  : vRec.companyDatabaseName as string,
           },
         }
         var modalRef = this.modalService.open(ModalWaitComponent, {centered : true})
@@ -123,15 +121,15 @@ export class CreateAppComponent implements AfterViewInit {
           },
           () => {
             // set the app
-            changeApp(new KeyPair( { key : options.appCode, value : options.appName} ))
+            changeApp(new StringKeyPair( { key : options.appCode, value : options.appName} ))
             modalRef.close()  
             this.router.navigate(['object-designer'], {}) 
-          }
-        )}
-    })
-    .catch(error => {
-      this.alert.alertError(error)
-    })
+          })
+      }
+    }
+    catch(error){
+      this.alert.alertError(error as string)
+    }
   }
 
  

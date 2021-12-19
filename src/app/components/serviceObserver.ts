@@ -1,11 +1,14 @@
-import { Directive, EventEmitter, OnDestroy, OnInit } from '@angular/core';
+import { EventEmitter } from '@angular/core';
+import { GetAppResult } from 'mel-common';
 import { interval } from 'rxjs';
 import { Observable, Subscription } from 'rxjs/Rx'
-import { ClientConfig } from 'src/app/client.configs';
 import { AppService } from 'src/app/services/app-service';
 
-export enum WaitingFor { None="None", MasterSerive="MasterService", AppService="AppService" }
 
+export declare type PingResult = { 
+  appResult? : GetAppResult
+  state : ServiceStates
+}
 export enum ServiceStates {
   None = "", 
   Running = "Running", 
@@ -14,25 +17,25 @@ export enum ServiceStates {
 
 abstract class ServiceObserver {
   state : ServiceStates = ServiceStates.None
-  timer : Observable<number>
-  timerSub : Subscription
-  protected serviceStateEmitter = new EventEmitter<ServiceStates>()
+  timer? : Observable<number>
+  timerSub? : Subscription
+  protected serviceStateEmitter = new EventEmitter<PingResult>()
   serviceStateObs = this.serviceStateEmitter.asObservable()
 
   constructor(protected appService : AppService) {
   }
-  protected abstract ping() : Observable<string>
+  protected abstract ping() : Observable<GetAppResult>
 
   protected pingService() : void {
-    this.ping().subscribe( 
-      appDatabases => {
-        this.serviceStateEmitter.emit(ServiceStates.Running)
+    this.ping().subscribe({ 
+      next : result => {
+        this.serviceStateEmitter.emit({ appResult : result, state : ServiceStates.Running })
         this.stop()  
       },
-      error => { 
-        this.serviceStateEmitter.emit(ServiceStates.Error)
+      error : error => { 
+        this.serviceStateEmitter.emit({ state : ServiceStates.Error})
       }
-    ) 
+    }) 
   }
   start(period : number){
     this.timer = interval(period)
@@ -49,7 +52,7 @@ export class MasterServiceObserver extends ServiceObserver {
   constructor(appService : AppService){
     super(appService)
   }
-  protected ping() : Observable<string> {
+  protected override ping() : Observable<GetAppResult> {
     return this.appService.pingMaster()
   }
 }
@@ -58,7 +61,7 @@ export class AppServiceObserver extends ServiceObserver {
   constructor(appService : AppService){
     super(appService)
   }
-  protected ping() : Observable<string> {
-    return this.appService.pingApp()
+  protected override ping() : Observable<GetAppResult> {
+    return this.appService.getApp()
   }
 }

@@ -5,9 +5,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-
+import { isEmpty } from 'lodash';
 import { ListPage } from './list.page';
 import { PageTypes } from './types';
+import { EntityLiteral } from 'src/app/types';
 
 //function log(msg){ console.log(msg) }
 /**
@@ -16,7 +17,7 @@ import { PageTypes } from './types';
  */
 @Directive()
 @UntilDestroy()
-export abstract class ListRouted<Entity> extends ListPage<Entity> implements OnInit, AfterViewInit {
+export abstract class ListRouted<Entity extends EntityLiteral> extends ListPage<Entity> implements OnInit, AfterViewInit {
 
     constructor(private entityFunc : Function, 
                 private router : Router,
@@ -34,8 +35,8 @@ export abstract class ListRouted<Entity> extends ListPage<Entity> implements OnI
       var route = [this.cardRoute]
       if(this.listComponent && this.listComponent.selectedRowIndices.length){
         Object.assign(this.rec, this.recordSet[this.listComponent.selectedRowIndices[0]])
-        var pkFields = this.getPrimaryKeyFields()
-        if (pkFields)
+        var pkFields = this.primaryKeyFields
+        if (!isEmpty(pkFields))
           route.push(...Object.values(pkFields).map( value => { return String(value) }))
       }
       return route
@@ -43,12 +44,9 @@ export abstract class ListRouted<Entity> extends ListPage<Entity> implements OnI
     get routeToAddEntity() : string[] { return [this.cardRoute,'']}
     get routePrevious() : string[] {return ['/'] }
 
-    @ViewChild('page',        { read: ElementRef }) pageRef: ElementRef<HTMLElement>
-    @ViewChild('pageSlider',  { read: ElementRef }) pageSliderRef: ElementRef<HTMLDivElement>
-    @ViewChild('pageTable',   { read: ElementRef }) tableRef: ElementRef<HTMLTableElement>
-
-    get pageSliderElement(): HTMLDivElement { return this.pageSliderRef.nativeElement }
-    get tableElement() : HTMLTableElement { return this.tableRef.nativeElement }
+    @ViewChild('page',        { read: ElementRef }) pageRef?: ElementRef<HTMLElement>
+    @ViewChild('pageTable',   { read: ElementRef }) tableRef?: ElementRef<HTMLTableElement>
+    get tableElement() : HTMLTableElement | undefined { return this.tableRef?.nativeElement }
 
     /* Hooks */
 

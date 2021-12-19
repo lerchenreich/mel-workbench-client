@@ -1,4 +1,4 @@
-import { Directive, EventEmitter, Injector } from '@angular/core'
+import { Directive, EventEmitter, Injector, ProviderToken } from '@angular/core'
 import { from, Observable, PartialObserver, Subscriber, Subscription} from 'rxjs'
 import { map } from 'rxjs/operators'
 import { HttpClient} from '@angular/common/http'
@@ -6,23 +6,25 @@ import { isBoolean, validateSync, validate, ValidationError } from "class-valida
 import "reflect-metadata"
 import { isEmpty } from 'lodash'
 
-import { deepCopy, FilterOperators, IRenamingRequest, QueryOptions, SortOrder } from 'mel-common'
+import { deepCopy, ErrorCategories, FilterOperators, IRenamingRequest, MelError, QueryOptions, SortOrder } from 'mel-common'
 
 import { ClientConfig } from '../../client.configs'
 import { getModulProviderToken} from '../../core'
-import { ObjectLiteral, EntityTypes } from '../../types'
+import { EntityTypes, Range, EntityLiteral, FieldsMdMap, EntityListLiteral } from '../../types'
 import { EntityMetadata } from '../../metadata/entities'
 
-import { ClientFilters} from './filters'
-import { FieldConditions,  ClientCondition} from './filter-condition'
+import { ClientFilters} from './client-filters'
+import { FieldConditions,  ClientFilterCondition} from './client-filter-condition'
+import { newValidationError } from './client-condition-expression'
 import { FieldMetadata } from '../../types'
+import { ENTITIES } from 'src/app/models/entities'
 
 declare type ColumnTrigger<Entity> = (row : Entity) => void
 
 export type UpdateResult = {
   raw?: any
   affected?: number
-  generatedMaps?: ObjectLiteral[]
+  generatedMaps?: EntityLiteral[]
 }
 export type DeleteResult = {
   raw?: any
@@ -33,26 +35,37 @@ export type RenameResult = {
   affected?: number
 }
 
+export function getQueryParam(options? : any) : string {
+  return options? btoa(JSON.stringify(deepCopy(options))) : '' 
+}
+
+declare type TriggerMap = Map<string, ColumnTrigger<EntityLiteral>>
 @Directive()
-export class EntityService<Entity extends Object>{
+export class EntityService<Entity extends EntityLiteral>{
 
   constructor(private entityFunc : Function,  protected httpClient : HttpClient, protected config : ClientConfig) {   
     this.entityMetadata = EntityMetadata.get(entityFunc)
     this.lowerSingularName = this.entityMetadata.name.toLowerCase()
     this.lowerPluralName   = this.entityMetadata.pluralName.toLowerCase()
-    this._init()
+    this._filters = new ClientFilters<Entity>(this.fieldsMdMap)
+    this._data = Reflect.construct(this.entityFunc, []) 
+    this._xData = Reflect.construct(this.entityFunc, [])
+    this.user = this.entityFunc.name
+    this.options = {}
+    this.triggerMap = new Map<string, ColumnTrigger<EntityLiteral>>()
+    this.initColumnTrigger()
   } 
   
   protected get restEndpoint() : string { return  this.config.restCompanyEndpoint }
   protected readonly lowerSingularName : string
   protected readonly lowerPluralName : string
-  public readonly entityMetadata : EntityMetadata<Entity>
-  protected beforeInsert : Subscriber<Entity>
-  protected beforeModify : Subscriber<Entity>
-  protected beforeRename : Subscriber<Entity>
-  protected beforeDelete : Subscriber<Entity>
+  public readonly entityMetadata : EntityMetadata
+  protected beforeInsert? : Subscriber<Entity>
+  protected beforeModify? : Subscriber<Entity>
+  protected beforeRename? : Subscriber<Entity>
+  protected beforeDelete? : Subscriber<Entity>
   //protected onNew : Subscriber<Entity>
-  protected triggerMap : Map<keyof Entity, ColumnTrigger<Entity>>
+  protected triggerMap : TriggerMap
 
   private beforeInsertEmitter = new EventEmitter<Object>()
   private beforeModifyEmitter = new EventEmitter<Object>()
@@ -60,53 +73,43 @@ export class EntityService<Entity extends Object>{
   private beforeDeleteEmitter = new EventEmitter<Object>()
   private subscriptions : Subscription[] = []
  
-  private _xData : Entity
-  private _data : Entity         
-  public dataSet : Entity[]
+  private _xData : EntityLiteral
+  private _data : EntityLiteral         
+  public dataSet? : EntityLiteral[]
   protected dataSetIndex : number = -1
 
   private options : QueryOptions<Entity>
   private _filters : ClientFilters<Entity>
 
-  user : string = ''
-  private _init() : EntityService<Entity> {
-    this._filters = new ClientFilters<Entity>(this.columnsMetadataMap)
-    this._data = Reflect.construct(this.entityFunc, []) 
-    this._xData = Reflect.construct(this.entityFunc, [])
-    this.options = {}
-    this.user = this.entityFunc.name
-    this.initColumnTrigger()
-    return this  
-  }
-  initColumnTrigger() {
-    this.triggerMap = new Map<keyof Entity, ColumnTrigger<Entity>>()
-  }
-
-  static create<Entity>(injector : Injector, entityName : string) : EntityService<Entity> {
-    var service = injector.get(getModulProviderToken(entityName + 'Service')) as EntityService<Entity>
+  protected user : string
+ 
+  static create<Entity extends EntityLiteral>(injector : Injector, entityName : string) : EntityService<Entity> {
+    var serviceModuleId = ENTITIES.find( entityFunction => (entityFunction.name == entityName)) ? 'MelClient' : 'App'
+    var service = injector.get(getModulProviderToken(entityName + 'Service', serviceModuleId) as ProviderToken<any>) as EntityService<Entity>
     if (service.entityMetadata)   // the constructor was already called --> service is used by someone else
       service = EntityService.createFrom(service)
     return service
   }
-  static createFrom<Entity>(from : EntityService<Entity>) : EntityService<Entity> {
+  static createFrom<Entity extends EntityLiteral>(from : EntityService<Entity>) : EntityService<Entity> {
     return Object.assign(Object.create(from), from)._init()
   }
-  afterInit() : Observable<Entity> { return from([this.data]) }
+  protected initColumnTrigger() {}
+  afterInit() : Observable<Entity> { return from([this.data as Entity]) }
 
-  public get data()  : Entity { return this._data }   
-  public get xData() : Entity { return this._xData }
+  public get data()  : EntityLiteral { return this._data }   
+  public get xData() : EntityLiteral { return this._xData }
   public assignData(dataToAssign : Entity) : void { 
     this._data = Object.assign({}, dataToAssign)
     this._xData = Object.assign({}, dataToAssign)
   }
   //public get filters(): Filters<Entity>{ return this._filters }
-  public get columnsMetadataMap() :  Map<keyof Entity, FieldMetadata<Entity>> { return this.entityMetadata.columnsMap }
-  public get primaryKeys() : (keyof Entity)[] { return this.entityMetadata.primaryKeys }
+  public get fieldsMdMap() : FieldsMdMap { return this.entityMetadata.fieldsMdMap }
+  public get primaryKeys() : string[] { return this.entityMetadata.primaryKeys }
   public get singularName() : string { return this.entityMetadata.name }
   public get pluralName() : string { return this.entityMetadata.pluralName; }
   public get canWrite() : boolean { return this.entityMetadata.type === EntityTypes.table}
   public get hasFilters() : boolean { return this._filters.hasFilters }
-  public get hasFlowFilters() : boolean { return this._filters.hasFlowFilters }
+  public get hasFlowFilters() : boolean { return this._filters.hasFlowFilters}
   public get hasActiveFlowFilters() : boolean { return this._filters.hasActiveFlowFilters }
   public get hasUnlockedFilters() : boolean { return this._filters.hasUnlockedFilters }
 
@@ -116,10 +119,16 @@ export class EntityService<Entity extends Object>{
     if (this.beforeModify && permissions.includes('m')) this.subscriptions.push(this.beforeModifyEmitter.subscribe(this.beforeModify))
     if (this.beforeRename && permissions.includes('m')) this.subscriptions.push(this.beforeRenameEmitter.subscribe(this.beforeRename))
   }
+  public assertGetFieldMd(fieldName : string) : FieldMetadata<Entity>{
+    const md = this.fieldsMdMap.get(fieldName)
+    if (md)
+      return md
+    throw new Error(`Metadata of field "${fieldName} is undefined`)
+  }
   public unsubscribe(){
     this.subscriptions.forEach( subscription => subscription.unsubscribe() )
   }
-  public triggerColumn(name : keyof Entity, row : Entity) : void {
+  public triggerColumn(name : string, row : EntityLiteral) : void {
     this.triggerMap?.get(name)?.call(this, row)
   }
   /**
@@ -152,25 +161,28 @@ export class EntityService<Entity extends Object>{
   }
   //#region options and conditions
 
-  private selectFieldname(fieldName : (keyof Entity))
-  {
+  private _selectName(fieldName : (keyof Entity)): EntityService<Entity>{
     if (!this.options.select)
       this.options.select = [fieldName];
     else {
       if (!this.options.select.includes(fieldName))
         this.options.select.push(fieldName);
     }
+    return this
   }
   public select(fieldNames :(keyof Entity )[]) : EntityService<Entity>{
     for(var fieldName of fieldNames)
-        this.selectFieldname(fieldName)
+        this._selectName(fieldName)
     return this;
   }
   public setOrder(sortOrder : SortOrder<Entity> | undefined ) : EntityService<Entity>{
-    this.options.order = sortOrder
+    if (sortOrder)
+      this.options.order = sortOrder
+    else 
+      delete this.options.order
     return this
   }
-  public get sortOrder() : SortOrder<Entity> | undefined { return this.options.order }
+  public get order() : SortOrder<Entity> | undefined { return this.options.order }
 
 
   public setCalcFields(calcFieldNames : (keyof Entity)[]) : EntityService<Entity>{
@@ -178,19 +190,27 @@ export class EntityService<Entity extends Object>{
     return this
   }
   
-  public take(n : number | undefined) :EntityService<Entity>{
-    this.options.take = n;
+  public take(n : number) :EntityService<Entity>{
+    if (n > 0)
+      this.options.take = n
+    else 
+      delete this.options.take
     return this;
   }
-  public skip( n : number | undefined) :EntityService<Entity>{
-    this.options.skip = n;
+  public skip( n : number) :EntityService<Entity>{
+    if (n > 0) 
+      this.options.skip = n
+    else 
+      delete this.options.skip
     return this;
   }
-  public get rowRange() : number[] {
+  
+  public get rowRange() : Range {
     const from = this.options.skip ? this.options.skip : 0
     const until = this.options.take ? from + this.options.take : undefined
-    return [from, until]
+    return { from : from, until : until }
   }
+ 
   /**
     * resets the options 
   */
@@ -207,8 +227,7 @@ export class EntityService<Entity extends Object>{
 
   public copyFilters(from : EntityService<Entity>) : EntityService<Entity> {
     this._filters = from._filters.copy() as ClientFilters<Entity>
-    if (from.options.order)
-      this.setOrder(from.options.order)
+    this.setOrder(from.options.order)
     return this
   }
   public copyNormalFilters(from : EntityService<Entity>, includeLocked : boolean = true) : EntityService<Entity> {
@@ -219,8 +238,8 @@ export class EntityService<Entity extends Object>{
     this._filters.setFlowFilters(from._filters.copyFlowFieldConditions())
     return this
   }
-  public getNormalFilters(includeLocked : boolean = true) : ClientFilters<Entity>{
-    return this._filters.copyNormalFilters(includeLocked)  as ClientFilters<Entity>
+  public getNormalFilters(includeLocked : boolean = true) : ClientFilters<EntityLiteral>{
+    return this._filters.copyNormalFilters(includeLocked)  as ClientFilters<EntityLiteral>
   }
   public getFlowFilters() : ClientFilters<Entity>{
     return this._filters.copyFlowFilters()  as ClientFilters<Entity>
@@ -261,19 +280,19 @@ export class EntityService<Entity extends Object>{
    *                  if range is an array with 2 values, the between-filter is set
    *                  if range is an array with 1 values order is no array the equal-filter is set
    */
-  public setRange(fieldName: keyof Entity, range? : any) : EntityService<Entity>{ 
+  public setRange(fieldName: string, range? : any) : EntityService<Entity>{ 
     this._filters.setRange(fieldName, range) 
     return this
   }
 
-  public setFilter(fieldName: keyof Entity, condition: ClientCondition | string | boolean) : EntityService<Entity>{
+  public setFilter(fieldName: string, condition: ClientFilterCondition | string | boolean) : EntityService<Entity>{
     if (typeof condition === 'string')
       this._filters.add(this.createFieldCondition(fieldName, FilterOperators.cplx, condition))
     else 
     if (typeof condition === 'boolean')
       this._filters.add(this.createFieldCondition(fieldName, FilterOperators.equal, condition))
     else {
-      const filter : FieldConditions<Entity> = {}
+      const filter : FieldConditions<EntityLiteral> = {}
       filter[fieldName] = condition
       this._filters.add(filter)
     }
@@ -306,47 +325,53 @@ export class EntityService<Entity extends Object>{
   }
  
   public setParameter(param : string | string[] | undefined):EntityService<Entity>{
-      if (param)
-          this.options.parameter = Array.isArray(param) ? Array.from(param): [param]
-      else
-          delete this.options.parameter
-      return this       
+    if (param)
+      this.options.parameter = Array.isArray(param) ? Array.from(param): [param]
+    else
+      delete this.options.parameter
+    return this       
   }
 
   public addParameter(param : string | string[] | undefined):EntityService<Entity>{
-      if (param){
-          if (!Array.isArray(param))
-              param = [param]
-          if (this.options.parameter)
-              this.options.parameter.push(...param)
-          else 
-              this.options.parameter = Array.from(param)
-      }
-      return this
+    if (param){
+      if (!Array.isArray(param))
+        param = [param]
+      if (this.options.parameter)
+        this.options.parameter.push(...param)
+      else 
+        this.options.parameter = Array.from(param)
+    }
+    return this
   }
 
-      //Helpers
-    /**
-     * Creates a fieldcondition. 
-     * @param key           the fieldname for the condition
-     * @param operator      complex or simple operators
-     * @param operandsOrFilterExpression is an expression, if the the type is 'string' and the operator is unknown or complex 
-     */
-  private createFieldCondition(key : keyof Entity, operator : FilterOperators, operandsOrFilterExpression? : any | any[]) : FieldConditions<Entity> {
-    if (!key || !operator) return undefined
+  //Helpers
+  private assertGetFieldMetadata(key : string) : FieldMetadata<Entity>{
+    const md = this.fieldsMdMap.get(key)
+    if (md) 
+      return md
+    throw new Error(`Fieldmetadata of field ${key} not found`, )
+  } 
+  /**
+   * Creates a fieldcondition. 
+   * @param key           the fieldname for the condition
+   * @param operator      complex or simple operators
+   * @param operandsOrFilterExpression is an expression, if the the type is 'string' and the operator is unknown or complex 
+   */
+  private createFieldCondition(key : string, operator : FilterOperators, operandsOrFilterExpression? : any | any[]) : FieldConditions<Entity> {
+    
     function assertArray(arrayMandatory : boolean){
       const isArray = operandsOrFilterExpression && Array.isArray(operandsOrFilterExpression)
       if (arrayMandatory && !isArray) throw new Error(`operand "${operandsOrFilterExpression}" must be an array`)
       if (!arrayMandatory && isArray) throw new Error(`operand "${operandsOrFilterExpression}" must not be an array`)
     }
-    var fieldCondition : FieldConditions<Entity> = {}
-    const columnType = this.columnsMetadataMap.get(key).type
+    var fieldCondition = {} as FieldConditions<EntityLiteral>
+    const columnType = this.assertGetFieldMetadata(key).type
     if (operandsOrFilterExpression){
       switch(operator) {
         case FilterOperators.unknown: // a simple filterexpression (operator operand, ...)
         case FilterOperators.cplx:    // a complex filterexpression
             assertArray(false) 
-            fieldCondition[key] = new ClientCondition(operator, [operandsOrFilterExpression], columnType)
+            fieldCondition[key] = new ClientFilterCondition(operator, [operandsOrFilterExpression], columnType)
             break;
         case FilterOperators.equal:
         case FilterOperators.notEqual:
@@ -357,21 +382,21 @@ export class EntityService<Entity extends Object>{
         case FilterOperators.like:
         case FilterOperators.notLike:
             assertArray(false) 
-            fieldCondition[key] = new ClientCondition(operator, [operandsOrFilterExpression], columnType)
+            fieldCondition[key] = new ClientFilterCondition(operator, [operandsOrFilterExpression], columnType)
             break
         case FilterOperators.between:
         case FilterOperators.notBetween:
         case FilterOperators.in:
         case FilterOperators.notIn: 
             assertArray(true)
-            fieldCondition[key] = new ClientCondition(operator, operandsOrFilterExpression, columnType) 
+            fieldCondition[key] = new ClientFilterCondition(operator, operandsOrFilterExpression, columnType) 
             break;
         case FilterOperators.isEmpty:
         case FilterOperators.isNotEmpty:
         case FilterOperators.isNull:
         case FilterOperators.isNotNull:
             console.log(`createFieldCondition: for operator "${operator}" no operand "${operandsOrFilterExpression}" is expected`)
-            fieldCondition[key] = new ClientCondition(operator, undefined, columnType) 
+            fieldCondition[key] = new ClientFilterCondition(operator, [], columnType) 
             break;
         default:
             throw new Error(`createFieldCondition: operator "${operator}" not yet implemented`)
@@ -383,7 +408,7 @@ export class EntityService<Entity extends Object>{
         case FilterOperators.isEmpty:
         case FilterOperators.isNotEmpty:
         case FilterOperators.isNull:
-        case FilterOperators.isNotNull: fieldCondition[key] = new ClientCondition(operator, undefined, columnType)
+        case FilterOperators.isNotNull: fieldCondition[key] = new ClientFilterCondition(operator, [], columnType)
             break
         default: throw new Error(`Operands expected for operator "${operator}"`)
       }
@@ -394,36 +419,21 @@ export class EntityService<Entity extends Object>{
   * ensures by converting the Date-, DateTime-, boolean and Numberfields into the correct types
   * @param entity 
   */
-  private apiToJavaTypes(entity : Entity) : Entity {
-      Array.from(this.columnsMetadataMap.entries()).forEach( ([key,colMetadata]) => {
+  private apiToJavaTypes(entity : EntityLiteral) : Entity {
+    Array.from(this.fieldsMdMap.entries()).forEach( ([key,colMetadata]) => {
       if (colMetadata.apiToJavaType && entity.hasOwnProperty(key))
-        entity[key as string] = entity[key] !== undefined? colMetadata.apiToJavaType(entity[key]) : colMetadata.default
-   })
-   return entity
+        entity[key] =  colMetadata.apiToJavaType(entity[key]) as any
+    })
+   return entity as Entity
   }
-  /*
-  private convertRecordSetToSqlTypes() {
-    //  for(let rec of this.recordset)  
-    //      this.convertEntityToSqlTypes(rec)
-  }
-    public convertRecToSqlTypes() {
-      //this.convertEntityToSqlTypes(this.rec)
-  }
-  
-  private convertEntityToSqlTypes(entity : Entity) {
-      Array.from(this.columnsMetadata.entries()).forEach( ([key,colMetadata]) => {
-          if (colMetadata.convertToApiType && this.data.hasOwnProperty(key))
-              entity[key] = colMetadata.convertToApiType(entity[key])
-      })
-  }
-*/
-  private updateRecAndxRec(entity : Entity) : Entity{
-    if (entity) {
+ 
+  private updateRecAndxRec(entity : EntityLiteral) : Entity{
+    if (!isEmpty(entity)) {
       entity = this.apiToJavaTypes(entity)
       this._data =  Object.assign(this._data , entity)
       this._xData = Object.assign(this._xData, entity)
     }
-    return this._data
+    return this._data as Entity
   }
   private fireError(observers : PartialObserver<Entity>[] | PartialObserver<Entity[]>[], error : any){
     if (observers) 
@@ -444,29 +454,37 @@ export class EntityService<Entity extends Object>{
       return false
   }
   // Publics
-  public get normalColumnChanged() : boolean {
-      const columns = this.columnsMetadataMap
-      for(let key of columns.keys()) {
-          const _class = columns.get(key).class.toLocaleLowerCase() || 'normal'
-          if (_class == 'normal'){
-              if (this._data[key] !== this._xData[key])
-                  return true
-          }
+  public get normalFieldChanged() : boolean {
+    const fields = this.fieldsMdMap
+    for(let key of fields.keys()) {
+      const fieldMd = fields.get(key) as FieldMetadata<Entity>
+      const _class = fieldMd.class.toLocaleLowerCase() || 'normal'
+      if (_class == 'normal'){
+        if (this._data[key] !== this._xData[key])
+          return true
       }
-      return false
+    }
+    return false
   }
+  /**
+   * Initialize the rec-data and the xRec-data, but by default not the primary-keys 
+   * @param includePrimaryKeys (default:false) if true, the primary keys are initialized 
+   */
   public initData(includePrimaryKeys : boolean = false){
-      Array.from(this.columnsMetadataMap.entries()).forEach( ([key, metadata]) => {
-          if (includePrimaryKeys || !metadata.primaryKeyNo|| metadata.isGenerated)
-              this._data[key as string] = metadata.default
-        })
-      this._xData = Object.assign(this._xData, this._data) 
+    Array.from(this.fieldsMdMap.entries())
+      .forEach( ([key, metadata]) => {
+        if (includePrimaryKeys || !metadata.primaryKeyNo || metadata.isGenerated)
+          this._data[key] = metadata.default as any
+      })
+    this._xData = Object.assign(this._xData, this._data) 
   }
+  /**
+   * set the primary-key from the filterconditions-values
+   */
   public setPrimarykeysFromFilter() : void {
-    //fill pk-fields from filter
     for(let [key, condition] of Object.entries(this._filters.filters)){
-      if (this.columnsMetadataMap.get(key as keyof Entity).primaryKeyNo){
-        var operand = (condition as ClientCondition).operandOf(FilterOperators.equal)
+      if (this.assertGetFieldMetadata(key).primaryKeyNo){
+        var operand = (condition as ClientFilterCondition).operandOf(FilterOperators.equal) as any
         if (operand)
           this._data[key] = operand
       } 
@@ -479,9 +497,9 @@ export class EntityService<Entity extends Object>{
   public validate() : Promise<ValidationError[]>{
     return validate(this.data)
   }
-  public primaryKeyFields() : Partial<Entity> | undefined {
-      var entityIds : Partial<Entity> = {}
-      return this.primaryKeys.every( key => {
+  public get primaryKeyFields() : EntityLiteral {
+      var entityIds : EntityLiteral = {}
+      this.primaryKeys.every( key => {
         const value = this._data[key]
         if (value == undefined || value == null) return false
         switch (typeof value){
@@ -490,40 +508,38 @@ export class EntityService<Entity extends Object>{
         }
         entityIds[key] = value
         return true
-      })? entityIds : undefined
+      })
+      return entityIds 
   }
-  public validatePrimaryKeys() : ValidationError[] {
-    function newValidationError(key : string, constraint : string) : ValidationError {
-      const err = new ValidationError()
-      err.property = key
-      err.constraints = {'primaryKey': constraint }
-      return err
-    }
-    return this.primaryKeys.map( key => {
+  public validatePrimaryKeys() : ValidationError[]  {
+    
+    const errors : ValidationError[] = []
+    this.primaryKeys.forEach( key => {
       const value = this._data[key]
-      if (value == undefined || value == null) return newValidationError(key as string, 'undefined')
+      if (value == undefined || value == null) 
+        errors.push(newValidationError(key as string, 'undefined'))
       switch (typeof value){
-        case 'number' : if (isNaN(value)) return newValidationError(key as string, 'inNaN'); break
-        case 'boolean': if (!isBoolean(value)) return newValidationError(key as string, 'no boolean'); break
+        case 'number' : if (isNaN(value)) errors.push(newValidationError(key as string, 'inNaN')); break
+        case 'boolean': if (!isBoolean(value)) errors.push(newValidationError(key as string, 'no boolean')); break
       }
-    }).filter( err => { if (err) return err})
+    })
+    return errors
   } 
   //#region Database read-operations
 
   /**
    * returns the count of record filtered by conditions
    */
-  public count(observer?:PartialObserver<number>) : Observable<number> | undefined {
+  public count(observer?:PartialObserver<number>) : Observable<number> {
     const observable = this._count()
     if (observer){
-        observable.subscribe(
-            count => { if (observer.next) observer.next(count) },
-            error => { if (observer.error) observer.error(error) },
-            ()    => { if (observer.complete) observer.complete()}
-        )
-        return undefined
-      }
-      return observable
+      observable.subscribe({
+        next : count  => { if (observer.next) observer.next(count) },
+        error : error => { if (observer.error) observer.error(error) },
+        complete : () => { if (observer.complete) observer.complete()}
+      })
+    }
+    return observable
   }
 
   /**
@@ -532,31 +548,30 @@ export class EntityService<Entity extends Object>{
    * If you want to combine the observable of "get" don't support the param observers and handle
    * the observation for example in the rxjs-Operations-subscription
    */
-  public get(observers? : PartialObserver<Entity>[] ) : Observable<Entity> | undefined{
+  public get(observers? : PartialObserver<Entity>[] ) : Observable<Entity>{
     if (this.primaryKeys.length == 0){
       const error = `can't get() "${this.singularName}"! No primarykeys`
       if (observers)
-          this.fireError(observers, error)
+        this.fireError(observers, error)
       else
-          throw new Error(error)
-      return undefined
+        throw new Error(error)
     } 
     const savedFilter = this._filters.filters
-    var fieldConditions : FieldConditions<Entity> = {}
+    var fieldConditions : FieldConditions<EntityLiteral> = {}
     this.primaryKeys.forEach(key => 
-        fieldConditions[key] = new ClientCondition(FilterOperators.equal, [this.data[key as string]], this.columnsMetadataMap.get(key).type))
+      fieldConditions[key] = new ClientFilterCondition(FilterOperators.equal, [this.data[key] as any], this.assertGetFieldMetadata(key).type))
     this.setFilters(fieldConditions)
-    var observable = this._get()
-    .pipe( map( entity => isEmpty(entity) ? undefined : this.updateRecAndxRec(entity)) )       
+    var observable = this
+      ._get()
+      .pipe( map( entity => this.updateRecAndxRec(entity)) )       
     
     this.setFilters(savedFilter) 
     if (observers){
-      observable.subscribe(
-          entity => this.fireNext(observers, entity),
-          error  => this.fireError(observers, error),
-          ()     => this.fireComplete(observers)
-      )
-      return undefined
+      observable.subscribe({
+        next : entity  => this.fireNext(observers, entity),
+        error : error  => this.fireError(observers, error),
+        complete :  () => this.fireComplete(observers)
+      })
     }
     return observable
   }
@@ -566,16 +581,15 @@ export class EntityService<Entity extends Object>{
    * If you want to combine the observable of "findFirst" don't support the param observers and handle
    * the observation for example in the rxjs-Operations-subscription
    */
-  public findFirst(observers? : PartialObserver<Entity>[]): Observable<Entity> | undefined {
+  public findFirst(observers? : PartialObserver<Entity>[]): Observable<Entity>{
     var observable :  Observable<Entity> = this._findFirst()
     .pipe( map( entity => { return this.updateRecAndxRec(entity) }) )
     if (observers){
-      observable.subscribe(
-        entities => this.fireNext(observers, entities),
-        error    => this.fireError(observers, error),
-        ()       => this.fireComplete(observers)
-      )
-      return undefined
+      observable.subscribe({
+        next : entities => this.fireNext(observers, entities),
+        error : error   => this.fireError(observers, error),
+        complete :()    => this.fireComplete(observers)
+      })
     }
     return observable
   }
@@ -585,16 +599,15 @@ export class EntityService<Entity extends Object>{
    * If you want to combine the observable of "findLast" don't support the param observers and handle
    * the observation for example in the rxjs-Operations-subscription
    */
-  public findLast(observers? : PartialObserver<Entity>[]) : Observable<Entity> | undefined {
+  public findLast(observers? : PartialObserver<Entity>[]) : Observable<Entity> {
     var observable :  Observable<Entity> = this._findLast()
     .pipe(map( entity => this.updateRecAndxRec(entity)))
     if (observers){
-      observable.subscribe(
-          entities => this.fireNext(observers, entities),
-          error    => this.fireError(observers, error),
-          ()       => this.fireComplete(observers)
-      )
-      return undefined
+      observable.subscribe({
+        next : entities => this.fireNext(observers, entities),
+        error: error    => this.fireError(observers, error),
+        complete : ()   => this.fireComplete(observers)
+      })
     }
     return observable
   }   
@@ -605,8 +618,8 @@ export class EntityService<Entity extends Object>{
    * If you want to combine the observable of "findMany" don't support the param observers and handle
    * the observation for example in the rxjs-Operations-subscription
    */
-  public findMany(observers? : PartialObserver<Entity[]>[]) : Observable<Entity[]> | undefined  {
-    var observable :  Observable<Entity[]> = this._findMany()
+  public findMany(observers? : PartialObserver<EntityLiteral[]>[]) : Observable<EntityLiteral[]>  {
+    var observable : Observable<EntityLiteral[]> = this._findMany()
     .pipe( 
       map( (entities) => {
           this.dataSetIndex = -1 
@@ -615,32 +628,40 @@ export class EntityService<Entity extends Object>{
       }),
     )
     if (observers){
-      observable.subscribe(
-          entities => this.fireNext(observers, entities),
-          error    => this.fireError(observers, error),
-          ()       => this.fireComplete(observers)
-      )
-      return undefined
+      observable.subscribe({
+        next : entities => this.fireNext(observers, entities),
+        error : error   => this.fireError(observers, error),
+        complete : ()   => this.fireComplete(observers)
+      })
     }
     return observable
   }
 
+  /**
+   * 
+   * @param increment fetches the next data from the recordset into the data
+   *                  can be negative 
+   * @returns the increment or 0, if the target-record is auf of range
+   */
   public next(increment : number = 1) : number {
-      if (increment === 0) {
+      if (increment === 0) 
         throw new Error("next() with increment=0 doesn't make sense")
+      if (this.dataSet){
+        const futureIndex = this.dataSetIndex + increment
+        if ( futureIndex > (this.dataSet.length - 1) || (futureIndex < 0) )
+            return 0
+        this.dataSetIndex = futureIndex
+        this._xData = Object.assign(this._xData, this._data)
+        this._data = Object.assign(this._data ,this.dataSet[this.dataSetIndex])
+        return increment
       }
-      const futureIndex = this.dataSetIndex + increment
-      if ( futureIndex > (this.dataSet.length - 1) || (futureIndex < 0) )
-          return 0
-      this.dataSetIndex = futureIndex
-      this._xData = Object.assign(this._xData, this._data)
-      this._data = Object.assign(this._data ,this.dataSet[this.dataSetIndex])
+      throw new Error(`Dataset is undefined`)
   }
-  public calcFields(fieldsToCalculate : string[], observer? : PartialObserver<Entity>) : Observable<Entity>{
-    const obs =  this._calcFields(fieldsToCalculate, this.data)
-    .pipe(map(entity => { 
+  public calcFields(fieldsToCalculate : string[], observer? : PartialObserver<Entity>) : Observable<EntityLiteral>{
+    const obs =  (this._calcFields(fieldsToCalculate, this.data as Entity) as Observable<EntityLiteral>)
+      .pipe(map(entity => {
             Object.entries(entity).forEach( ([key, value]) => entity[key] = value)
-            return this.updateRecAndxRec(entity) 
+            return this.updateRecAndxRec(entity as Entity) 
           })
     )
     if (observer) 
@@ -649,45 +670,65 @@ export class EntityService<Entity extends Object>{
   }
   public insert(observer? : PartialObserver<Entity>) : Observable<Entity>{
     //this.convertRecToSqlTypes()
-    const obs = this._insert(this.data)
+    const obs = this._insert(this.data as Entity)
     .pipe( map( entity => { return entity? this.updateRecAndxRec(entity) : entity }) )
     if (observer) 
       obs.subscribe(observer)
     return obs 
   }
  
-  public insertMany(observer? : PartialObserver<UpdateResult>) : Observable<UpdateResult> {  
-    const obs = this._insertMany(this.dataSet)
-    if (observer) 
-      obs.subscribe(observer)
-    return obs 
-  }
-  public rename(observer? : PartialObserver<UpdateResult>) : Observable<UpdateResult> {
-    if (this.primaryKeys.filter(key => this._data[key] !== this._xData[key]).length){
-      var renamingRequest : IRenamingRequest<Entity> = { rec  : this.data, xRec : this._xData }
-      const obs = this._rename(renamingRequest)
-        .pipe( map(entity => this.updateRecAndxRec(entity)) )
-      if (observer) 
-        obs.subscribe(observer)
-      return obs  
+  /**
+   * 
+   * @param dataSetOrObserver (optional) the dataset to insert or an observer. if undefined, the local dataset is inserted
+   * @param observer          (optional) the observer of the insert 
+   * @returns                 the observable of the insert
+   */
+  public insertMany(dataSetOrObserver? : Entity[] | PartialObserver<UpdateResult>, observer? : PartialObserver<UpdateResult>) : Observable<UpdateResult> {  
+    
+    var obs = observer
+    var dataSet = dataSetOrObserver || this.dataSet
+    if (dataSetOrObserver){
+      if (!Array.isArray(dataSetOrObserver))
+        obs = dataSetOrObserver as PartialObserver<UpdateResult>
     }
-    return undefined
+    else {
+      if (!dataSet)
+        throw new Error('Dataset is undefined')
+    }
+    const observable = this._insertMany(dataSet as Entity[]) 
+    if (obs) 
+      observable.subscribe(obs)
+    return observable 
+  }
+
+  public rename(observer? : PartialObserver<UpdateResult>) : Observable<UpdateResult> {
+    
+    if (this.primaryKeys.filter(key => this._data[key] !== this._xData[key]).length){
+      var renamingRequest : IRenamingRequest<Entity> = { rec  : this.data as Entity, xRec : this._xData as Entity }
+      var observable  = this._rename(renamingRequest)
+        .pipe( map(entity => this.updateRecAndxRec(entity)) )
+    }
+    else throw MelError.create(`Nothing to rename`, 'rename', ErrorCategories.Implausible)
+    if (observer) 
+      observable.subscribe(observer)
+    return observable 
+   
   }
   public update(observer?: PartialObserver<Entity>) : Observable<Entity> {
-    const obs =  this._update(this.data)
+    const obs =  this._update(this.data as Entity)
     .pipe( map(entity => this.updateRecAndxRec(entity)) )
     if (observer) 
       obs.subscribe(observer)
     return obs 
   }
   public updateMany(observer?: PartialObserver<UpdateResult>) : Observable<UpdateResult> {
-    const obs = this._updateMany(this.data)
+    const obs = this._updateMany(this.data as Entity)
     if (observer) 
       obs.subscribe(observer)
     return obs 
 }
   public delete(observer?:PartialObserver<DeleteResult>) : Observable<DeleteResult> {
-    const obs =  this._delete(this.data)
+    const obs =  this._delete(this.data as Entity)
     if (observer) 
       obs.subscribe(observer)
     return obs 
@@ -700,15 +741,14 @@ export class EntityService<Entity extends Object>{
   }
 
   //Database requests
-
   protected getOptionsQueryParam(options? : any) : string {
     const reqOptions = Object.assign(deepCopy(options?options:this.options) || {}, this._filters.getRequestOptions())
-    return "?options="+ btoa(JSON.stringify(reqOptions))
+    return getQueryParam(reqOptions)
   }
   private _count() : Observable<number> {
     const url = `${this.restEndpoint}/${this.lowerPluralName}count/${this.getOptionsQueryParam()}`;
-    return this.httpClient.get<Object>(url)
-          .pipe( map(data => {return data["count"]}))
+    return this.httpClient.get<{count : number}>(url)
+          .pipe( map( data => {return data.count}))
   }
   private _get() : Observable<Entity> {
      return this.httpClient.get<Entity>(`${this.restEndpoint}/${this.lowerSingularName}/${this.getOptionsQueryParam()}`)

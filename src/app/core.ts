@@ -1,31 +1,28 @@
-import { Type, InjectionToken, getModuleFactory, NgModuleFactory, ɵNG_INJ_DEF, ɵNG_PROV_DEF } from '@angular/core'
+import { Type, InjectionToken, getNgModuleById, ɵNG_INJ_DEF, ɵNG_PROV_DEF} from '@angular/core'
+import { ObjectLiteral } from './types'
 
+const providerKey = ɵNG_PROV_DEF ? ɵNG_PROV_DEF : "ɵprov"
+export const CLIENT_MODUL_NAME = 'mel-client'
+export const APP_MODUL_NAME = 'App'
 
-
-export function getModulProviderToken<T>( providerName : string, moduleName : string = 'App') : Type<T> |InjectionToken<T>  {
-    const provider = getModulProvider(providerName, moduleName)
-    const key = ɵNG_PROV_DEF ? ɵNG_PROV_DEF : "ɵprov"
-    return provider ? provider[key].token : undefined
-}
-
-export function getModulProvider<T>( providerName : string, moduleName : string = 'App') : any {
-    const appFactory : NgModuleFactory<any> = getModuleFactory(moduleName)
-    const providers = appFactory.moduleType[ɵNG_INJ_DEF]?.providers  
-
-    for (let provider of providers){
-      if (provider.name === providerName){
-        return provider
-      }
+export function getModulProviderToken<T>( providerName : string, moduleName : string): Type<T> |InjectionToken<T> | undefined {
+  try {
+    const appModule = getNgModuleById(moduleName) as ObjectLiteral
+    const providers = appModule[ɵNG_INJ_DEF].providers as Function[]
+    if (providers){
+      const provider = providers.find( provider => (providerName === provider.name) ) as ObjectLiteral
+      if (provider)
+        return provider[providerKey].token 
     }
-    return undefined
+  }
+  catch( error) {
+    console.error(error)
+  }
+  return undefined
 }
-export function getServiceModulProviders<T>(moduleName : string = 'App') : any[]{
-  const appFactory : NgModuleFactory<any> = getModuleFactory(moduleName)
-  const providers = appFactory.moduleType[ɵNG_INJ_DEF]?.providers  
-  return providers.filter( provider => {
-    return (typeof provider === 'function') && (provider.name.indexOf("Service")>1)}
-     )
+
+
+export function getInjectionToken<T>(provider : ObjectLiteral) : InjectionToken<T>{
+  return provider[ɵNG_PROV_DEF ? ɵNG_PROV_DEF : "ɵprov"].token 
 }
-export function getInjectionToken<T>(provider) : InjectionToken<T>{
-  return provider ? provider[ɵNG_PROV_DEF ? ɵNG_PROV_DEF : "ɵprov"].token : undefined
-}
+

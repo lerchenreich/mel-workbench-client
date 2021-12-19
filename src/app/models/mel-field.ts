@@ -1,7 +1,8 @@
-import { FieldTypes, notBlank } from 'mel-common'
+import { FieldTypes, MelFieldClasses, notBlank } from 'mel-common'
 import { Table } from '../metadata/entities';
-import { Column } from 'src/app/metadata/entities';
+import { Field } from 'src/app/metadata/entities';
 import  * as V  from './field-validations';
+import { EntityLiteral } from '../types';
 
 
 @Table({
@@ -26,81 +27,83 @@ import  * as V  from './field-validations';
   ],
   lookup : ["Name","Datatype"]
 })
-export class MelField  {
-    @Column({type : FieldTypes.String, primaryKeyNo:1, editable : false })  
-    public TableName : string   
+export class MelField extends EntityLiteral {
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal, primaryKeyNo:1, editable : false })  
+    public TableName? : string   
 
-    @Column({ type : FieldTypes.String, primaryKeyNo:2, validators : [notBlank]})
-    public Name : string   
+    @Field({ type : FieldTypes.String, class : MelFieldClasses.Normal, primaryKeyNo:2, validators : [notBlank]})
+    public Name? : string   
 
-    @Column({type : FieldTypes.Enum,
+    @Field({type : FieldTypes.Enum, class : MelFieldClasses.Normal,
             validators : [V.datatype],
             enumValues : ['String', 'Code', 'Integer', 'Decimal', 'DateTime', 'Date', 'Time', 'Boolean', 'Enum', 'BigInt']})//, '10', '11', 'Object', 'Buffer']})
-    public Datatype : string   
+    public Datatype? : string   
 
-    @Column({type : FieldTypes.Integer})
-    public Length : number   
+    @Field({type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+    public Length? : number   
 
-    @Column({type : FieldTypes.Integer,  validators : [V.primaryKeyNo]})
-    public PrimaryKeyNo : number   
+    @Field({type : FieldTypes.Integer, class : MelFieldClasses.Normal,  validators : [V.primaryKeyNo]})
+    public PrimaryKeyNo? : number   
 
-    @Column({ type : FieldTypes.Boolean, validators : [V.isAutoIncrement]} )
-    public IsAutoincrement : boolean   
+    @Field({ type : FieldTypes.Boolean, class : MelFieldClasses.Normal, validators : [V.isAutoIncrement]} )
+    public IsAutoincrement? : boolean   
 
-    @Column({type : FieldTypes.Enum,enumValues : ['Normal', 'FlowField', 'FlowFilter']})
-    public Class : string   
+    @Field({type : FieldTypes.Enum , class : MelFieldClasses.Normal,enumValues : ['Normal', 'FlowField', 'FlowFilter']})
+    public Class? : string   
 
-    @Column({ type : FieldTypes.String,  validators : [V.flowFormula]})
-    public FlowFormula : string   
+    @Field({ type : FieldTypes.String, class : MelFieldClasses.Normal, validators : [V.flowFormula]})
+    public FlowFormula? : string   
 
-    @Column({
-      type : FieldTypes.Enum, 
+    @Field({
+      type : FieldTypes.Enum, class : MelFieldClasses.Normal, 
       enumValues : ['VARCHAR', 'TINYINT', 'INT', 'BIGINT', 'DATE', 'DATETIME', 'TIME', 'TIMESTAMP', 'BOOLEAN', 'DOUBLE', 'ENUM', 'JSON','TINYBLOB', 'BLOB', 'MEDIUMBLOB', 'LONGBLOB', 'TINYTEXT', 'TEXT', 'MEDIUMTEXT', 'LONGTEXT'],
       display : { doNotTranslate : true}
     })
-    public SqlDatatype : string   
+    public SqlDatatype? : string   
     
-    @Column({
-      type : FieldTypes.Enum, 
+    @Field({
+      type : FieldTypes.Enum, class : MelFieldClasses.Normal,
       enumValues : ['NotBlank','NotZero']
     })
-    public Validator : string   
+    public Validator? : string   
 
-    @Column({ type : FieldTypes.String, validators : [V.defaultValue]})
-    public DefaultValue : string   
+    @Field({ type : FieldTypes.String, class : MelFieldClasses.Normal, validators : [V.defaultValue]})
+    public DefaultValue? : string   
 
-    @Column({type : FieldTypes.String,  })
-    public Format : string   
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal,  })
+    public Format? : string   
 
-    @Column({ type : FieldTypes.Boolean, validators : [V.nullable]})  
-    public Nullable : boolean   
+    @Field({ type : FieldTypes.Boolean, class : MelFieldClasses.Normal, validators : [V.nullable]})  
+    public Nullable? : boolean   
 
-    @Column({type : FieldTypes.Boolean}) 
-    public Updateable : boolean   
+    @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal}) 
+    public Updateable? : boolean   
 
-    @Column({ type : FieldTypes.Boolean})  
+    @Field({ type : FieldTypes.Boolean, class : MelFieldClasses.Normal})  
     public DefaultSelect? : boolean   
 
-    @Column({ type : FieldTypes.Boolean})  
+    @Field({ type : FieldTypes.Boolean, class : MelFieldClasses.Normal})  
     public ShowDefault? : boolean   
     
-    @Column({ type : FieldTypes.Boolean})  
+    @Field({ type : FieldTypes.Boolean, class : MelFieldClasses.Normal})  
     public ShowInPart? : boolean   
     
-    @Column({type : FieldTypes.Boolean}) 
-    public ShowInLookup : boolean   
+    @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal}) 
+    public ShowInLookup? : boolean   
 
-    @Column({type : FieldTypes.String})
-    public EnumValues : string   
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal})
+    public EnumValues? : string   
 
-    @Column({type : FieldTypes.String})
-    public Comment : string   
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal})
+    public Comment? : string   
 
-    @Column({type : FieldTypes.DateTime, editable : false })  
-    public timestamp : Date   
+    @Field({type : FieldTypes.DateTime, class : MelFieldClasses.Normal, editable : false })  
+    public timestamp? : Date   
     
     constructor(init? : Partial<MelField>){
-        if (init) Object.assign(this, init)
+      super()
+      if (init) 
+        Object.assign(this, init)
     }
   
 

@@ -19,5 +19,12 @@ export class TemplateService {
   add(name : FieldTemplates, ref : TemplateRef<any>){
     this.templates.set(name, ref)
   }
-  get(name : FieldTemplates) { return this.templates.get(name)}
+  get(name : FieldTemplates) : TemplateRef<any> | undefined{ return this.templates.get(name)}
+  assertGet(name : FieldTemplates) : TemplateRef<any> { 
+    const ref = this.templates.get(name)
+    if (ref)
+      return ref
+    throw new Error(`template "${name} not found`)
+  }
+  
 }

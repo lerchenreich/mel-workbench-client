@@ -4,7 +4,7 @@
       {
         "label": "Build.Main",
         "type": "shell",
-        "command": "npm run electron:serve-tsc",
+        "command": "npm run e:build",
         "isBackground": false,
         "group": {
           "kind": "build",
@@ -24,7 +24,7 @@
         }
       }, 
       {
-        "label": "Build.Renderer",
+        "label": "Renderer.BuildAndServe",
         "type": "shell",
         "command": "npm run ng:serve",
         "isBackground": true,
@@ -44,38 +44,7 @@
             "endsPattern": "^.*Compiled successfully.*"
           }
         }
-      },
-      {
-        "type": "npm",
-        "script": "start",
-        "isBackground": true,
-        "presentation": {
-          "focus": true,
-          "panel": "dedicated"
-        },
-        "group": {
-          "kind": "build",
-          "isDefault": true
-        },
-        "problemMatcher": {
-          "owner": "typescript",
-          "source": "ts",
-          "applyTo": "closedDocuments",
-          "fileLocation": [
-            "relative",
-            "${cwd}"
-          ],
-          "pattern": "$tsc",
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": {
-              "regexp": "(.*?)"
-            },
-            "endsPattern": {
-              "regexp": "Compiled |Failed to compile."
-            }
-          }
-        }
-      },
+      }
+     
     ]
   }

@@ -12,45 +12,42 @@ import 'moment/locale/de'
 
 import { isEmpty } from 'lodash'
 import { ExpressionType, RecFilters, QueryFilter, FilterOperators, QueryOptions, FieldTypes } from "mel-common"
-import { FieldMetadata } from "../../types"
-import { ClientCondition } from "./filter-condition"
+import { EntityLiteral, FieldMetadata, FieldsMdMap } from "../../types"
+import { ClientFilterCondition } from "./client-filter-condition"
 
 /**
  * Represents the filters of a record
  */
-export class ClientFilters<Entity extends Object> extends RecFilters<Entity, ClientCondition, FieldMetadata<Entity>> {
+export class ClientFilters<Entity extends EntityLiteral> extends RecFilters<EntityLiteral, ClientFilterCondition, FieldMetadata<EntityLiteral>> {
  
-  constructor(_columnsMetadata : Map<keyof Entity, FieldMetadata<Entity>>){
-    super(_columnsMetadata)
+  constructor(_fieldsMetadata : FieldsMdMap){
+    super(_fieldsMetadata)
   }
 
-  createCondition(op : FilterOperators, ops : ExpressionType[], colType : FieldTypes) : ClientCondition{
-    return new ClientCondition(op, ops, colType)
+  createCondition(op : FilterOperators, ops : ExpressionType[], colType : FieldTypes) : ClientFilterCondition{
+    return new ClientFilterCondition(op, ops, colType)
   }
-
-  //getter, setter
-   
+  //getter, setter   
   public get friendly() : string {
     var filters : string = ''
     Object.entries(this._filters)
     .forEach( ([key, value]) => {
       if (!this._lockedFilterNames.includes(key)) 
-        filters += `${key}:${(value as ClientCondition).friendly}`
+        filters += `${key}:${(value as ClientFilterCondition).friendly}`
     })
     return filters
   }
-  
   public getRequestOptions() : QueryOptions<Entity> {
     var options : QueryOptions<Entity> = {}
     if (this.hasFilters) {
       var fieldFilters : QueryFilter<Entity> = {}
       var flowFilters  : QueryFilter<Entity> = {}
-      Object.entries(this._filters).forEach( ([fieldName, condition]:[string, ClientCondition]) => {
-        if (condition.hasExpressions){
+      Object.entries(this._filters).forEach( ([fieldName, condition]) => {
+        if (condition?.hasExpressions){
           if (this.isNormalFilter(fieldName)) 
-            fieldFilters[fieldName] = condition.toQueryFormat()
-          else if (this.isFlowFilter) 
-            flowFilters[fieldName] = condition.toQueryFormat()
+            fieldFilters[fieldName as keyof Entity] = condition.toQueryFormat() 
+          else if (this.isFlowFilter(fieldName)) 
+            flowFilters[fieldName as keyof Entity] = condition.toQueryFormat()
           else throw new Error()
         }
       })

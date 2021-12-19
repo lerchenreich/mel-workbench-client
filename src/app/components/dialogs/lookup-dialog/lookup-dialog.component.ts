@@ -2,11 +2,13 @@ import { Component, OnDestroy, Inject,  AfterViewChecked, Injector} from '@angul
 import { MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog'
 import { SelectionModel } from '@angular/cdk/collections'
 import { MatTableDataSource } from '@angular/material/table'
+import { isEmpty } from 'lodash'
 
 import { EntityMetadata } from '../../../metadata/entities'
 import { IFilterDialogData, FilterDialogComponent } from '../filter-dialog/filter-dialog.component';
 import { EntityService } from 'src/app/services/core/entityService'
 import { LookupDialogData, ILookupDialogResult } from '../../core/types'
+import { EntityListLiteral, EntityLiteral } from 'src/app/types'
 
 
 const $index = Symbol('lookup-dialog-index')
@@ -18,20 +20,20 @@ const $index = Symbol('lookup-dialog-index')
 })
 export class LookupDialogComponent implements OnDestroy, AfterViewChecked {
   caption : string
-  selection : SelectionModel<Object>;
-  datasource  = new MatTableDataSource<Object>()
-  rec : EntityService<Object>
+  selection   = new SelectionModel<EntityListLiteral>(false, [], true)
+  datasource  = new MatTableDataSource<EntityListLiteral>()
+  rec : EntityService<EntityLiteral>
   displayColumns : string []
   captions : string[]
   currValue : any
-  scollToIndex : string = undefined
-  _selectedRow : Object  = undefined
-  get selectedRow() : Object { return this._selectedRow}
-  set selectedRow(row : Object) { 
-      this.scollToIndex = this._selectedRow ? undefined : String(row[$index])
-      this._selectedRow = row
+  scollToIndex? : string 
+  _selectedRow? : EntityListLiteral
+  get selectedRow() : EntityListLiteral | undefined { return this._selectedRow}
+  set selectedRow(rowToSelect : EntityListLiteral | undefined) { 
+    this.scollToIndex = this._selectedRow ? undefined : String(rowToSelect? rowToSelect[$index]: undefined)
+    this._selectedRow = rowToSelect
   }
-  returnKey : string    //selected field in selectedRow
+  returnFieldname : string    //selected field in selectedRow
 
   constructor(@Inject(MAT_DIALOG_DATA) 
               data: LookupDialogData,
@@ -39,13 +41,13 @@ export class LookupDialogComponent implements OnDestroy, AfterViewChecked {
               private filterDialog : MatDialog) {                
     // get the tablerelation of the data.columnName
     // we find the tablerelation in the metadata of the calling table
-    var metadata = EntityMetadata.get<any>(data.lookupFor.entity)
-    const columnMetadata = metadata.columnsMap.get(data.lookupFor.fieldName )
-    if (columnMetadata.tableRelation) {  
-      this.returnKey = columnMetadata.tableRelation.RelatedFieldName 
+    var metadata = EntityMetadata.assertGet(data.lookupFor.entity)
+    const fieldMetadata = metadata.assertGetField(data.lookupFor.fieldName )
+    if (fieldMetadata.tableRelation) {  
+      this.returnFieldname = fieldMetadata.tableRelation.RelatedFieldName 
       this.currValue = data.currValue
       //get the metadata of the tablerelations-table   
-      metadata = EntityMetadata.get(columnMetadata.tableRelation.RelatedTableName)
+      metadata = EntityMetadata.assertGet(fieldMetadata.tableRelation.RelatedTableName)
       this.rec = EntityService.create(injector, metadata.target.name)           
       
       
@@ -53,16 +55,15 @@ export class LookupDialogComponent implements OnDestroy, AfterViewChecked {
       //if (columnMetadata.tableRelation.filters)
       //  this.rec.setFilters(columnMetadata.tableRelation.filters)     
       
-      
-      this.selection = new SelectionModel<Object>(false, [], true)
     }
     else {
       this.rec = EntityService.create(injector, metadata.target.name)
+      this.returnFieldname = 'unknonwn'
     } 
-    this.displayColumns = this.rec.entityMetadata.displayedColumns.lookup
+    this.displayColumns = this.rec.entityMetadata.displayedFields.lookup || []
     this.captions = []
     for( let name of this.displayColumns){
-      this.captions.push(this.rec.columnsMetadataMap.get(name as keyof Object).display.caption)
+      this.captions.push(this.rec.assertGetFieldMd(name).display?.caption || '')
     }
     this.caption = data.title || 'pluralCaption' 
     this.refresh()
@@ -84,41 +85,46 @@ export class LookupDialogComponent implements OnDestroy, AfterViewChecked {
     this.rec.findMany([{ 
       error : err => console.log("Lookup-Error: " + err),
       complete : () => {
-        this.rec.dataSet.forEach( (entity, index) => entity[$index] = index ) 
-        this.datasource.data = this.rec.dataSet
-        this.datasource.connect(); 
-        this.datasource.sort;
-        if (this.currValue){
-          const rows = this.datasource.data.filter(entity => entity[this.returnKey] === this.currValue, this)        
-          this.toggle( rows[0] )
+        if (this.rec.dataSet){
+          this.datasource.data = this.rec.dataSet.map( 
+            (entity, index) => (entity as EntityListLiteral)[$index] = index) as unknown as EntityListLiteral[]
+          //this.rec.dataSet.forEach( (entity, index) => entity[$index] = index ) 
+          //this.datasource.data = this.rec.dataSet
+          this.datasource.connect(); 
+          this.datasource.sort;
+          if (this.currValue){
+            const rows = this.datasource.data.filter(entity => entity[this.returnFieldname] === this.currValue, this)        
+            if (!isEmpty(rows))
+              this.toggle( rows[0] )
+          }
         }
       }
     }])
   }
-  afterFindMany(entities) : Object[]{
+  afterFindMany(entities : EntityLiteral[]) : EntityLiteral[]{
     return entities
   }
   getDialogResult(ok : boolean) : ILookupDialogResult {
     return { 
       ok : ok,
-      selectedRow   : this.selectedRow,
-      key : this.returnKey  
+      selectedRow   : this.selectedRow as EntityLiteral,
+      key : this.returnFieldname  
     }
   }
-  toggle(row : Object): void {
+  toggle(row : EntityListLiteral): void {
     this.selection.toggle(row);
     if (this.selection.isSelected(row)){
       this.selectedRow = row;
     }
   }
-  getBackgroundColor(row : Object, index : number){
+  getBackgroundColor(row : EntityListLiteral, index : number){
     const isSelected = this.selection.isSelected(row)
     const odd = (index & 1) == 0
     return isSelected? 'LightYellow' : (odd ? 'WhiteSmoke' : '')
   }
 
   runFilterDialog(){
-    var filterData : IFilterDialogData<Object> = {
+    var filterData : IFilterDialogData = {
       entityName : this.rec.singularName,
       filters : this.rec.getNormalFilters(false)
     }

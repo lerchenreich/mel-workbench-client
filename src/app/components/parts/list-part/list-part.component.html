@@ -21,7 +21,7 @@
         <button mat-icon-button (click)="remove($event)" [disabled]="!deleteAllowed || nothingSelected" 
           matTooltip="{{'Menu.Button.Delete'|translate}}">
         <mat-icon>delete</mat-icon> </button>     
-        <button mat-icon-button (click)="save($event)"   [disabled]="!modifyAllowed || nothingSelected  || listComponent.firstInvalidRow"
+        <button mat-icon-button (click)="save($event)"   [disabled]="!modifyAllowed || nothingSelected  || !!listComponent?.firstInvalidRow"
           matTooltip="{{'Menu.Button.Save'|translate}}">
         <mat-icon>done</mat-icon> </button>
       </mat-toolbar>

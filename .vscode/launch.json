@@ -2,6 +2,16 @@
     "version": "0.2.0",
     "configurations": [
       {
+        "name": "Launch Chrome",
+        "request": "launch",
+        "type": "pwa-chrome",
+        "preLaunchTask": "Renderer.BuildAndServe",
+        "url": "http://localhost:3041",
+        "webRoot": "${workspaceFolder}",
+        "sourceMaps": true,  
+        "timeout": 60000
+      },
+      {
         "name": "Main",
         "type": "node",
         "preLaunchTask": "Build.Main",
@@ -20,32 +30,15 @@
     {
         "name": "Renderer",
         "type": "chrome",
-        "preLaunchTask": "Build.Renderer",
+        "preLaunchTask": "Renderer.BuildAndServe",
         "request": "attach",
         "port": 9223,
         "url": "http://localhost:3041",
-        "trace": "verbose",
+        "trace": true,
         "sourceMaps": true,  
         "webRoot": "${workspaceFolder}",
         "timeout": 60000
     },
-
-    {
-      "name": "Serve",
-      "type": "chrome",
-      "request": "launch",
-      "preLaunchTask": "npm: start",
-      "url": "http://localhost:3041/#",
-      "webRoot": "${workspaceFolder}",
-      "sourceMapPathOverrides": {
-        "webpack:/*": "${webRoot}/*",
-        "/./*": "${webRoot}/*",
-        "/src/*": "${webRoot}/*",
-        "/*": "*",
-        "/./~/*": "${webRoot}/node_modules/*"
-        }
-    }
-  
   ],
   "compounds": [
     {

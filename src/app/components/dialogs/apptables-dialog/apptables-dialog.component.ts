@@ -9,6 +9,8 @@ import { AppService } from '../../../services/app-service';
 import { ListPage } from '../../core/list.page';
 import { ListRow } from '../../core/page-data';
 import { MelTable } from '../../../models/mel-table';
+import { EntityLiteral, FieldMetadata, FieldsMdMap } from 'src/app/types';
+import { EntityMetadata } from 'src/app/metadata/entities';
 
 @Component({
   selector: 'apptables-dialog',
@@ -17,7 +19,7 @@ import { MelTable } from '../../../models/mel-table';
 })
 export class AppTablesDialogComponent extends ListPage<MelTable> implements OnInit{
 
-  activeTables : string []
+  activeTables : string [] = []
  
   constructor(  public dialogRef: MatDialogRef<AppTablesDialogComponent>, private appService : AppService,
                 injector : Injector, translateService : TranslateService, dialog : MatDialog, snackBar  : MatSnackBar) { 
@@ -25,12 +27,12 @@ export class AppTablesDialogComponent extends ListPage<MelTable> implements OnIn
     this.entityName = MelTable.name
   }
 
-  @ViewChild('page',        { read: ElementRef }) pageRef: ElementRef<HTMLElement>
-  @ViewChild('pageSlider',  { read: ElementRef }) pageSliderRef: ElementRef<HTMLDivElement>
-  @ViewChild('pageTable',   { read: ElementRef }) tableRef: ElementRef<HTMLTableElement>
+  @ViewChild('page',        { read: ElementRef }) pageRef?: ElementRef<HTMLElement>
+  @ViewChild('pageSlider',  { read: ElementRef }) pageSliderRef?: ElementRef<HTMLDivElement>
+  @ViewChild('pageTable',   { read: ElementRef }) tableRef?: ElementRef<HTMLTableElement>
 
-  get pageSliderElement(): HTMLDivElement { return this.pageSliderRef.nativeElement }
-  get tableElement() : HTMLTableElement { return this.tableRef.nativeElement }
+  get pageSliderElement(): HTMLDivElement | null { return this.pageSliderRef?.nativeElement || null }
+  get tableElement() : HTMLTableElement | null   { return this.tableRef?.nativeElement      || null }
 
   /* Hooks */
 
@@ -54,13 +56,17 @@ export class AppTablesDialogComponent extends ListPage<MelTable> implements OnIn
       tables => { activeTables = tables.map(table => `\`${table.Name}\``)},
       error =>  { this.alertError("getTableNames-Error: " + error)},
       () =>     {
-        const options : GetTablesOptions = activeTables.length > 0 ? { database : '', condition : ` NOT IN (${activeTables.join(",")})` } : undefined 
+        const options : GetTablesOptions = { 
+                database : '', 
+                condition :  activeTables.length > 0 ? ` NOT IN (${activeTables.join(",")})` : undefined
+              } 
         forkJoin([this.appService.getAppTableNames(options), this.appService.getMelTableNames(options)])
         .subscribe( 
           ([namesApp, namesMel]) => { 
-            this._recService.dataSet = namesApp.map(name => new MelTable({ Name : name }))
-                               .concat(namesMel.map(name => new MelTable({ Name : name })))
-            this.totalRecCount = this._recService.dataSet.length 
+            const rec = this.assertRecService
+            rec.dataSet = namesApp.map(name => new MelTable({ Name : name }))
+                                                    .concat(namesMel.map(name => new MelTable({ Name : name })))
+            this.totalRecCount = rec.dataSet.length 
           },
           err => {
             this.alertError("getTableNames-Error: " + err)
@@ -77,13 +83,13 @@ export class AppTablesDialogComponent extends ListPage<MelTable> implements OnIn
   refresh(){
     this.setViewMode()
     this.pageCeil = Math.round(this.totalRecCount / this.pageSize)
-    this.dataSource.data = this.recordSet.map( (entity, index) => new ListRow(entity, this.columnsMap, index))
+    this.dataSource.data = this.recordSet.map( (entity, index) => new ListRow(entity, this.fieldsMdMap as FieldsMdMap, index))
     this.dataSource.connect()
   }
   /**
    * dialog returnvalue
    */
   selectedTables() : string[] {
-    return this.listComponent ? this.listComponent.selectedRowIndices.map(i => this.recordSet[i].Name ) :[]
+    return this.listComponent ? this.listComponent.selectedRowIndices.map(i => this.recordSet[i].Name as string ) :[]
   }
 }

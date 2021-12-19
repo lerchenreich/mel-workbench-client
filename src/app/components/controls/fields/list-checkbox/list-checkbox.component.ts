@@ -29,7 +29,7 @@ export class ListCheckboxComponent extends BaseCheckboxComponent implements Afte
 
   ngAfterViewInit() {
     if (this.editable)
-      this.inputElement.focus()
+      this.inputElement?.focus()
   }
   
 }

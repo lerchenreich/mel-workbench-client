@@ -4,16 +4,24 @@ import { isEmpty } from 'lodash'
 
 import { ValidationErrors } from '@angular/forms'
 import { ConditionExpression, ExpressionType, FieldTypes , FilterOperators, IQueryCondition} from 'mel-common'
+import { ValidationError } from 'class-validator'
 
+
+export function newValidationError(key : string, constraint : string) : ValidationError {
+  const err = new ValidationError()
+  err.property = key
+  err.constraints = {'primaryKey': constraint }
+  return err
+}
 function isValidDate(date : any) : boolean {
   return (date instanceof Date) && !isNaN(date.getTime())
 }
-
 function IntegerToApiOperand(operand : ExpressionType): string { return Number(operand).toFixed(0) }
 function DateToApiOperand(operand : ExpressionType) : string { return moment(operand as Date).format('YYYY-MM-DD') }
 function DecimalToApiOperand(operand : ExpressionType) : string { return Number(operand).toLocaleString('en') }
 function DatetimeToApiOperand(operand : ExpressionType) : string { return moment(operand as Date).format('YYYY-MM-DD HH:mm:ss') }
 function BooleanToApiOperand(operand : ExpressionType) : string { return (operand as Boolean)? '1' : '0' }
+function TextToApiOperand(operand : ExpressionType): string { return operand as string }
 
 
 function ToFriendlyCode(operand : ExpressionType, ifInvalid : string): string { 
@@ -43,24 +51,24 @@ function ToFriendlyBoolean(operand: ExpressionType, ifInvalid : string) : string
   //return  boolStrings.flat(3).includes(operand as string)?yes[0]:no[0] 
 }
 //
-function validateString(expr : ConditionExpression) : ValidationErrors { 
+function validateString(expr : ConditionExpression) : ValidationErrors | null{ 
   if (expr.operator === FilterOperators.like) return null
   return (expr.operands as string[]).filter( value => value.includes('*') ).length  ?
             { operands : `Expression "Operator ${expr.operator} can't be used with '*'-expression`} : null
 }
-function validateNumber(expr : ConditionExpression) : ValidationErrors {
+function validateNumber(expr : ConditionExpression) : ValidationErrors | null{
   const  invalidNumbers = expr.operands.filter(operand => isNaN(operand as number))
   return invalidNumbers.length > 0? {operands : `Expression "${expr.input}" is not a number`} : null
 }
-function validateDate(expr : ConditionExpression) : ValidationErrors {
+function validateDate(expr : ConditionExpression) : ValidationErrors | null{
   const invalidDates = expr.operands.filter( operand => !isValidDate(operand))
   return invalidDates.length > 0? { operands : `Expression "${expr.input}" is no date-value`} : null
 }
-function validateDatetime(expr : ConditionExpression) : ValidationErrors {
+function validateDatetime(expr : ConditionExpression) : ValidationErrors | null {
   const invalidDates = expr.operands.filter( operand => !isValidDate(operand))
   return invalidDates.length > 0? { operands : `Expression "${expr.input}" is no datetime-value`} : null                  
 }
-function validateBoolean(expr : ConditionExpression) : ValidationErrors {
+function validateBoolean(expr : ConditionExpression) : ValidationErrors | null {
   var errors : ValidationErrors = {}
   if ( expr.operator != FilterOperators.equal)
     errors.operator = `Operator "${expr.operator}" can't be used with type 'Boolean'`
@@ -78,17 +86,21 @@ function validateBoolean(expr : ConditionExpression) : ValidationErrors {
  */
 export class ClientExpression extends ConditionExpression {
  
-  private _toApiOperand : (operand : ExpressionType) => string = undefined
-  private _toFriendlyOperand : (operand : ExpressionType, ifInvalid : string) => string = undefined
-  private _validate :(expr : ConditionExpression) => ValidationErrors 
-  /**
+  notYetImplemented(dummy : any) : string { throw new Error(`Fieldtype not yet implemented`) }
+  validationError(dummy : any) : ValidationErrors { return [newValidationError('fieldType', 'not yet implemented')] }
+  private _toApiOperand : (operand : ExpressionType) => string = TextToApiOperand
+  private _toFriendlyOperand : (operand : ExpressionType, ifInvalid : string) => string = this.notYetImplemented
+  private _validate :(expr : ConditionExpression) => ValidationErrors | null = this.validationError
+
+   /**
    * The constructor ist used for a friendly interface. The faster way is to use create()
-   * @param columnType 
+   * @param fieldType 
    * @param _input 
    */
-  constructor(columnType : FieldTypes, inputOrOperator? : string | FilterOperators, operands? : ExpressionType[]){
-    super(columnType, inputOrOperator, operands)
-    switch(columnType){
+  constructor(fieldType : FieldTypes, inputOrOperator? : string | FilterOperators, operands? : ExpressionType[]){
+   
+    super(fieldType, inputOrOperator, operands)
+    switch(fieldType){
       case FieldTypes.Code    : this._toFriendlyOperand = ToFriendlyCode;    this._validate = validateString;    break;
       case FieldTypes.String  : this._toFriendlyOperand = ToFriendlyString;  this._validate = validateString;    break;
       case FieldTypes.Integer : this._toFriendlyOperand = ToFriendlyInteger; this._validate = validateNumber;    this._toApiOperand = IntegerToApiOperand;  break;
@@ -99,6 +111,8 @@ export class ClientExpression extends ConditionExpression {
       case FieldTypes.BigInt  : this._toFriendlyOperand = ToFriendlyInteger; this._validate = validateNumber;    this._toApiOperand = IntegerToApiOperand;  break;
       case FieldTypes.Enum    : this._toFriendlyOperand = ToFriendlyString;  this._validate = validateString;    break;
       case FieldTypes.Time    : this._toFriendlyOperand = ToFriendlyDatetime;this._validate = validateDatetime;  this._toApiOperand = DatetimeToApiOperand; break;
+      case FieldTypes.Buffer  :
+      case FieldTypes.Object  : this._toApiOperand = this.notYetImplemented
     }
   }
 
@@ -107,7 +121,9 @@ export class ClientExpression extends ConditionExpression {
     opd : this.apiOperands
   }}
   private get apiOperands() : string[] {
-    return this._toApiOperand? this.operands.map( operand => this._toApiOperand(operand) ) : this.operands as string[]
+    if (this._toApiOperand)
+      return this.operands.map( operand => this._toApiOperand? this._toApiOperand(operand) : '')
+    return this.operands as string[]
   } 
   /**
    * Formats the expression into a friendly format f.e. 020320 --> 02.03.2020 (date)
@@ -116,26 +132,19 @@ export class ClientExpression extends ConditionExpression {
     if (this.operands.length === 1) 
       return `${this.operator===FilterOperators.equal?'':this.operator}${this._toFriendlyOperand(this.operands[0], this.input)}`
     if (this.operands.length > 1) {
-        const operands = this.operands.map( operand => this._toFriendlyOperand(operand, this.input) )
-        return (this.operator === FilterOperators.between)? `${operands[0]}..${operands[1]}` : `${this.operator} ${operands.join(',')}`     
+      const operands = this.operands.map( operand => this._toFriendlyOperand(operand, this.input) )
+      return (this.operator === FilterOperators.between)? `${operands[0]}..${operands[1]}` : `${this.operator} ${operands.join(',')}`     
     }
-    if (this.operands.length === 0) return ''
+    return ''
   }
 
   /**
   * validates the condition and returns ValidationErrors if invalid otherwise null
   */
-  public validate() : ValidationErrors {  
-        
-    function error(errorText : string) : ValidationErrors {
-      return { FilterExpressionCondition : errorText}
-    }
-
+  public validate() : ValidationErrors | null {  
     if (this.isEmpty) 
-      return error(`Condition "${this.operator} ${this.operands}" must not by empty`)
-  
-    
-    return this._validate? this._validate(this) : null
+      return { FilterExpressionCondition : `Condition "${this.operator} ${this.operands}" must not by empty`} as ValidationErrors 
+    return this._validate(this)
   }
  
 }

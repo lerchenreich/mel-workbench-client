@@ -14,7 +14,8 @@ import { ListRow } from '../../core/page-data';
 import { Sort } from '@angular/material/sort';
 import { Permissions } from '../../core/page';
 import { FieldContext, FieldNavigationEvent, ListContext, PageModes, SaveRequestEvent} from 'src/app/components/core/types';
-import { FieldMetadata } from '../../../types';
+import { EntityLiteral, FieldMetadata } from '../../../types';
+import { Field } from '../fields/field';
 
 function log(text:string){console.log(text)}
 function logInfo(text:string){console.info(text)}
@@ -73,7 +74,20 @@ const colorEven = 'WhiteSmoke'
 })
 @UntilDestroy()
 export class ListComponent implements AfterViewInit, OnDestroy {
+  private _listContext? : ListContext<EntityLiteral>
+  private _permissions? : Permissions 
+  private mouseOverIndex? : number
+  private _parentPageMode : PageModes = PageModes.None
   
+  fieldNames      : string[] = []
+  editableFieldIndices : number[] = []
+  private fieldsContext : FieldContext<EntityLiteral> 
+  
+  onSortAction   = new EventEmitter<SortOrder<EntityLiteral>>()
+  saveRowRequest = new EventEmitter<SaveRequestEvent>()
+  addRowRequest  = new EventEmitter<number>()
+  rowInitialized = new EventEmitter<ListFieldComponent>()
+ 
   constructor() { 
     this.rowSelection = new SelectionModel<ListRow<any>>(true, [], true) 
     this.selectedRowIndices = []
@@ -109,53 +123,40 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     //  changedObs      : { next : value => this.changedEmitter.next(value)  }
     }
   }
-  private _listContext : ListContext<any>
-  private _permissions : Permissions
-  private mouseOverIndex : number = undefined
-  private _parentPageMode : PageModes = PageModes.None
-  
-  colNames      : string[]
-  editableColIndices : number[]
-  private fieldsContext : FieldContext<any> 
-  
-  onSortAction   = new EventEmitter<SortOrder<any>>()
-  saveRowRequest = new EventEmitter<SaveRequestEvent<any>>()
-  addRowRequest  = new EventEmitter<number>()
-  rowInitialized = new EventEmitter<ListFieldComponent>()
  
-  get tableElement() : HTMLTableElement  { return this.tableRef.nativeElement }
-  get permissions() : Permissions { return this._permissions }
+  get tableElement() : HTMLTableElement | null  { return this.tableRef? this.tableRef.nativeElement : null }
+  get permissions() : Permissions { return this._permissions as Permissions}
   set parentPagemode(mode : PageModes){ this._parentPageMode = mode }
-  get colMetadata() :  FieldMetadata<any>[] { return this._listContext.metadata }
+  get fieldMetadata() :  FieldMetadata<EntityLiteral>[] { return this._listContext?.metadata || [] }
   get isErrorMode() : boolean { return this._parentPageMode == PageModes.Error }
   get isInsertMode(): boolean { return this._parentPageMode == PageModes.Insert }
   
-  get firstEditableColIndex() : number { return this.editableColIndices.length? this.editableColIndices[0] : -1}
-  get lastEditableColIndex() : number { return this.editableColIndices.length? this.editableColIndices[this.editableColIndices.length-1] : -1 }
+  get firstEditableColIndex() : number { return this.editableFieldIndices.length? this.editableFieldIndices[0] : -1}
+  get lastEditableColIndex() : number { return this.editableFieldIndices.length? this.editableFieldIndices[this.editableFieldIndices.length-1] : -1 }
 
-  @Input() set context(ctx : ListContext<any>){
+  @Input() set context(ctx : ListContext<EntityLiteral>){
     this._listContext = ctx
-    if (!this._permissions) 
+    if (!this._permissions && ctx.permissions) 
       this.permissions = ctx.permissions
-    this.colNames = this.colMetadata.map( meta => meta.name as string )
-    if (ctx.touchedObs) 
-      this.fieldsContext.touchedObs = ctx.touchedObs
+    this.fieldNames = this.fieldMetadata.map( meta => meta.name as string )
+    if (ctx.touchedObs && this.fieldsContext) 
+      this.fieldsContext.touchedObs = ctx.touchedObs as NextObserver<Field>
     if (ctx.addRowObs) 
       this.addRowRequest.pipe(untilDestroyed(this)).subscribe(ctx.addRowObs)
     if(ctx.saveObs)
       this.saveRowRequest.pipe(untilDestroyed(this)).subscribe(ctx.saveObs)
   }  
 
-  @Input() dataSource : MatTableDataSource<ListRow<any>>
-
+  @Input() dataSource? : MatTableDataSource<ListRow<EntityLiteral>>
+  get assertDataSource() :  MatTableDataSource<ListRow<EntityLiteral>> { if (this.dataSource) return this.dataSource; throw new Error('dataSource undefined!')}
   @Input() 
   set permissions(p : Permissions) {
-    this._permissions = p
-    this._listContext.permissions = p
+    this._permissions = p;
+    (this._listContext as ListContext<EntityLiteral>).permissions = p
     this.fieldsContext.editable =  this.permissions.modify
   }
   
-  @ViewChild('melTable', { read: ElementRef }) tableRef: ElementRef<HTMLTableElement>
+  @ViewChild('melTable', { read: ElementRef }) tableRef: ElementRef<HTMLTableElement>|null = null
   
   fieldContext(row : ListRow<any>, meta : FieldMetadata<any>) : FieldContext<any>{
     return  Object.assign({ data : row, meta : meta }, this.fieldsContext)
@@ -163,15 +164,15 @@ export class ListComponent implements AfterViewInit, OnDestroy {
 
 
  // #region row
- rowSelection : SelectionModel<ListRow<any>> 
+ rowSelection : SelectionModel<ListRow<EntityLiteral>> 
  selectedRowIndices : number[]   
  
- public get firstInvalidRowIndex() : number  { return this.dataSource.data.findIndex(row => !row.isValid) }
- public get firstInvalidRow() : ListRow<any>{ return this.dataSource.data.find(row => !row.isValid) }
- public get dirtyRows() : ListRow<any>[]    { return this.dataSource.data.filter( row => row.isDirty ) }
- public get isDirty() : boolean              { return this.dataSource.data.some( row => row.isDirty ) }
+ public get firstInvalidRowIndex()  : number | undefined          { return this.dataSource?.data.findIndex(row => !row.isValid) }
+ public get firstInvalidRow()       : ListRow<EntityLiteral>|undefined{ return this.dataSource?.data.find(row => !row.isValid) }
+ public get dirtyRows()             : ListRow<EntityLiteral>[]  { return this.dataSource?.data.filter( row => row.isDirty ) ||[] }
+ public get isDirty()               : boolean                     { return this.dataSource?.data.some( row => row.isDirty ) || false }
  isRowDirty(i : number){ 
-   return (this.dataSource.data[i])?this.dataSource.data[i].isDirty : false
+   return (this.dataSource?.data[i])? this.dataSource.data[i].isDirty : false
  }
  
  public getNewRowIndex() : number {
@@ -179,7 +180,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
      this.rowSelection.sort( (a,b) => a.compare(b))
      return this.rowSelection.selected[0].index + (this.shiftPressed?0:1)
    }
-    return this.dataSource.data.length
+   return this.dataSource?.data.length || 0
  }
 
  setFocusToFirstInvalidCell(row : ListRow<any>) {
@@ -205,23 +206,25 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       style.lineHeight = "1.2"
       style.marginBottom = "4px"
     } 
-    this.editableColIndices = this.colMetadata.map( (col,i) => col.editable ? i : -1 ).filter(i => i>=0 )
+    this.editableFieldIndices = this.fieldMetadata.map( (col,i) => col.editable ? i : -1 ).filter(i => i>=0 )
     
     // capture mouseclicks in the list to prevent default behavior, if the page is in error-mode   
-    fromEvent(this.tableElement, 'click', {capture : true, once : false})
+    fromEvent(this.tableElement as HTMLElement, 'click', {capture : true, once : false})
     .pipe(untilDestroyed(this))
-    .subscribe( (event : MouseEvent) => {
-      if (this.isErrorMode) {
-        var element = (event.target as HTMLElement)
-        while (element.tagName !== 'TR'){
-          if (!element.parentElement || element.parentElement.tagName === 'TABLE') 
-            return // clicked above a row
-          element = element.parentElement
+    .subscribe( {
+      next : (event : Event) => {
+        if (this.isErrorMode) {
+          var element = (event.target as HTMLElement)
+          while (element.tagName !== 'TR'){
+            if (!element.parentElement || element.parentElement.tagName === 'TABLE') 
+             return // clicked above a row
+            element = element.parentElement
+          }
+          // check, if the row is dirty. if not, prevent defaultbehavior
+          const clickedRow = Number(element.id)
+          if (!this.isRowDirty(clickedRow))
+           event.preventDefault()
         }
-        // check, if the row is dirty. if not, prevent defaultbehavior
-        const clickedRow = Number(element.id)
-        if (!this.isRowDirty(clickedRow))
-          event.preventDefault()
       }
     })
   }
@@ -231,7 +234,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
   }
   */
   ngOnDestroy(): void {
-    this.dataSource.disconnect()
+    this.dataSource?.disconnect()
   }
   //#endregion
   
@@ -272,8 +275,9 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       const field = fieldShortcut.field
       switch(key) {
         case 'F8' : if (field.rowIndex > 0) {
-          var value = this.dataSource.data[field.rowIndex-1][field.name]  
-          this.dataSource.data[field.rowIndex][field.name] = value   
+          const ds = this.dataSource as MatTableDataSource<ListRow<EntityLiteral>>
+          var value = ds.data[field.rowIndex-1][field.name]  
+          ds.data[field.rowIndex][field.name] = value   
         } 
         break
         default : return
@@ -283,7 +287,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     }    
   }
 
-  onCellKeyNavigation(fieldNav: FieldNavigationEvent) {
+  async onCellKeyNavigation(fieldNav: FieldNavigationEvent) {
     if (!this.permissions.modify) {
       console.error(`ListComponent.onCellKeyNavigation() reached even permissions are !modify.`)
       return
@@ -292,7 +296,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     const field = fieldNav.field
     var nextRowIndex : number = field.rowIndex
     var nextColIndex : number = field.colIndex
-    const component = this
+    const component = this as ListComponent
     
     function onError() {
       const firstInvalid = field.data.firstInvalid as ListFieldComponent
@@ -313,9 +317,9 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       return true
     }    
     function gotoNext() : boolean {
-      while (++nextColIndex < component.colMetadata.length) // go to the next editable field
-        if (component.colMetadata[nextColIndex].editable) break
-      if (nextColIndex < component.colMetadata.length){
+      while (++nextColIndex < component.fieldMetadata.length) // go to the next editable field
+        if (component.fieldMetadata[nextColIndex].editable) break
+      if (nextColIndex < component.fieldMetadata.length){
         simulate()
         return true
       }
@@ -324,15 +328,15 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     }
     function gotoPrev() : void {
       while (--nextColIndex >= 0)  // go to the previous editable field
-        if (component.colMetadata[nextColIndex].editable) break
+        if (component.fieldMetadata[nextColIndex].editable) break
       if (nextColIndex < 0)         //restore the columnindex. we don't go to the end of the List
         nextColIndex = field.colIndex
       if (nextColIndex !== field.colIndex)
         simulate()
     }
-    function carriageReturn() : void {
+    async function carriageReturn() : Promise<void> {
       function CRLF() {
-        if ( (nextRowIndex + 1) == component.dataSource.data.length) // end of datasource?
+        if ( (nextRowIndex + 1) == component.dataSource?.data.length) // end of datasource?
           component.addRowRequest.next(nextRowIndex+1) // add a new Record to the datasource and recordset
         else { 
           nextRowIndex++
@@ -343,7 +347,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       if (component.isErrorMode) 
         return  
       if (field.data.isDirty) {
-        if (field.data.validate()) {
+        if (await field.data.validate()) {
           component.saveRowRequest.next( { 
             pageData : field.data, 
             afterSavedObserver : {
@@ -355,11 +359,11 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       }
       else CRLF()
     }
-    function onArrow(onComplete: () => void){
+    async function onArrow(onComplete: () => void){
       if (component.isErrorMode) 
         return 
       if ( field.data.isDirty ) {
-        if(field.data.validate()) {
+        if(await field.data.validate()) {
           component.saveRowRequest.next({ 
             pageData : field.data, 
             afterSavedObserver : {
@@ -375,7 +379,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     // ----------------------------
     switch (key){
       case "ArrowDown"  : onArrow( () => {
-          if ( (nextRowIndex+1) < this.dataSource.data.length){
+          if ( (nextRowIndex+1) < this.assertDataSource.data.length || 0){
             nextRowIndex++ 
             simulate()
           }
@@ -389,14 +393,14 @@ export class ListComponent implements AfterViewInit, OnDestroy {
         })
         break
       case "Enter"      : 
-        carriageReturn() 
+        await carriageReturn() 
         break
       case "Tab"        : 
         if (fieldNav.keyboardEvent.shiftKey)
           gotoPrev()
         else 
           if (!gotoNext()) 
-            carriageReturn() 
+            await carriageReturn() 
         break
         
     } //switch
@@ -405,14 +409,14 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     /**
     * Helpers
     */
-  private simulateMouse(clickEvent : string, element:HTMLTableDataCellElement){
+  private simulateMouse(clickEvent : string, element:HTMLTableCellElement){
     var evt = new MouseEvent(clickEvent, {
       bubbles : true, cancelable : true, view : window
     })
     element?.dispatchEvent(evt)
   }
-  private getCellAt(rowIndex : number, columnIndex : number) : HTMLTableDataCellElement {
-    var row = $(this.tableElement).find("tr")[rowIndex+1]
+  private getCellAt(rowIndex : number, columnIndex : number) : HTMLTableCellElement {
+    var row = $(this.tableElement as HTMLTableElement).find("tr")[rowIndex+1]
     var cell = $(row).find("td")[columnIndex]
     return cell
   }
@@ -423,7 +427,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
    * if a field is in EDITmode, this clickhandler is called BEFORE the editable-clickhandler
    * @param row 
    */
-  onRowClick(row : ListRow<any>, rowIndex): void {
+  onRowClick(row : ListRow<any>, rowIndex : number): void {
    // info(`--> onRowClick(index: ${rowIndex}) [EditMode: ${this.isEditMode}] [IsDirty: ${this.isRowDirty(rowIndex)}] [Keys: ${this.shiftPressed?'Shift':''}  ${this.ctrlPressed?'Ctrl':''}]`)
     if (this.isInsertMode){
       this.rowSelection.clear()
@@ -442,17 +446,17 @@ export class ListComponent implements AfterViewInit, OnDestroy {
           firstIndex = lastIndex = this.rowSelection.selected[0].index
         }
         if ( firstIndex > rowIndex) // select above the first selected
-          this.rowSelection.select(...this.dataSource.data.slice(rowIndex, firstIndex))
+          this.rowSelection.select(...this.assertDataSource.data.slice(rowIndex, firstIndex))
         else {
           if (lastIndex < rowIndex) // select below the last selected
-            this.rowSelection.select(...this.dataSource.data.slice(lastIndex+1, rowIndex+1))
+            this.rowSelection.select(...this.assertDataSource.data.slice(lastIndex+1, rowIndex+1))
           else { // row to select is between the first and the last selected 
               // i think we ignore this
           }
         }
       }
       else { // nothing selected, we select all until the rowIndex
-        this.rowSelection.select(...this.dataSource.data.slice(0, rowIndex+1))
+        this.rowSelection.select(...this.assertDataSource.data.slice(0, rowIndex+1))
       }
     }
     else {
@@ -475,7 +479,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
    * Handels the hover-event and saves then mouseoverindex for the backgroundcolor
    * @param index 
    */
-  onMouseover(index):void {
+  onMouseover(index : number):void {
     this.mouseOverIndex = this.rowSelection.hasValue() ? -1 : index
   }
   

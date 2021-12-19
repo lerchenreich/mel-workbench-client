@@ -15,7 +15,7 @@ export async function primaryKeyNo(value : any, row : MelField) : Promise<any> {
   return row.IsAutoincrement ? greaterThan(row.PrimaryKeyNo, 0) : valueOk(row.PrimaryKeyNo)
 }
 export async function isAutoIncrement(value : any, row : MelField) : Promise<any> {
-  return row.PrimaryKeyNo > 0 ? valueOk(value) : notTrue(row.IsAutoincrement) 
+  return row.PrimaryKeyNo? valueOk(value) : notTrue(row.IsAutoincrement) 
 }
 export async function defaultValue(value : any, row : MelField) : Promise<any> {
   if (row.Class === 'Normal' && row.Nullable) 
@@ -29,7 +29,7 @@ export async function nullable(value : any, row : MelField) : Promise<any> {
   return valueOk(value)
 }
 
-export var datatype : ValidationFunc<MelField> = undefined
+export var datatype : ValidationFunc<MelField> 
 /*
 export function datatype(value : boolean, row : DatasourceRow | MelColumn) : Promise<any> {
   const err = (row as DatasourceRow).checkFields("Datatype", [neededFieldnames...])

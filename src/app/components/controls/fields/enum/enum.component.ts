@@ -10,17 +10,18 @@ import { Component, ElementRef, Input } from '@angular/core';
 })
 export class EnumComponent {
 
-  mappedValue : string
+  mappedValue : string = ''
   constructor(private host: ElementRef) { }
 
   @Input()
-  sourceMap : string[]
+  sourceMap? : string[]
   @Input()
-  targetMap : string[]
+  targetMap? : string[]
 
   @Input()
   set value(v:string) { 
-    this.mappedValue = this.targetMap? this.targetMap[this.sourceMap.indexOf(v)] : v
+    if (this.sourceMap)
+      this.mappedValue = this.targetMap? this.targetMap[this.sourceMap.indexOf(v)] : v
   } 
   
   @Input() set disabled(disable : boolean) { 

@@ -1,20 +1,33 @@
-import { FieldTypes } from "mel-common"
-import { Column, Table } from "../metadata/entities"
+import { FieldTypes, MelFieldClasses } from "mel-common"
+import { Field, Table } from "../metadata/entities"
+import { EntityLiteral } from "../types"
 
 
 @Table()
-export class MelSetup {
+export class MelSetup  extends EntityLiteral {
 
-  @Column( { type : FieldTypes.Integer, primaryKeyNo : 1})
-  Major : number
+  @Field( { type : FieldTypes.Code, class : MelFieldClasses.Normal, primaryKeyNo : 1 })
+  AppCode? : string
 
-  @Column( { type : FieldTypes.Integer, primaryKeyNo : 2})
-  Minor : number
+  @Field( { type : FieldTypes.String, class : MelFieldClasses.Normal } )
+  AppName? : string
 
-  @Column( { type : FieldTypes.Integer, primaryKeyNo : 3})
-  Build : number
+  @Field( { type : FieldTypes.String, class : MelFieldClasses.Normal } )
+  AppDbName? : string
 
-  @Column({type : FieldTypes.String}) 
-  public AppName    : string  // appname
+  @Field( { type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+  Major? : number
+
+  @Field( { type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+  Minor? : number
+
+  @Field( { type : FieldTypes.Integer, class : MelFieldClasses.Normal})
+  Build? : number
+
+  @Field({type : FieldTypes.String, class : MelFieldClasses.Normal}) 
+  public ServerProject?    : string  
+
+  @Field( { type : FieldTypes.String, class : MelFieldClasses.Normal } )
+  public ClientProject? : string
   
 }

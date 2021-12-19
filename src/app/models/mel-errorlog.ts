@@ -1,24 +1,25 @@
 
-import { Column } from 'src/app/metadata/entities'
+import { Field } from 'src/app/metadata/entities'
 import { Table } from 'src/app/metadata/entities'
-import { FieldTypes } from '../types'
+import { FieldTypes, MelFieldClasses } from 'mel-common'
+import { EntityLiteral } from '../types'
 @Table()
-export class MelErrorLog {
-    @Column({type : FieldTypes.BigInt, primaryKeyNo : 1, editable : false })  
-    public Id : bigint   
+export class MelErrorLog  extends EntityLiteral {
+    @Field({type : FieldTypes.BigInt, class : MelFieldClasses.Normal, primaryKeyNo : 1, editable : false })  
+    public Id? : bigint   
 
-    @Column({type : FieldTypes.String})
-    public Method : string   
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal})
+    public Method? : string   
     
-    @Column({type : FieldTypes.Enum, enumValues : []})
-    public Class : string   
+    @Field({type : FieldTypes.Enum, class : MelFieldClasses.Normal, enumValues : []})
+    public Class? : string   
 
-    @Column({type : FieldTypes.String})
-    public Message : string   
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal})
+    public Message? : string   
 
-    @Column({type : FieldTypes.String})
-    public Details : string   
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal})
+    public Details? : string   
 
-    @Column({type : FieldTypes.DateTime})  
-    public timestamp : Date   
+    @Field({type : FieldTypes.DateTime, class : MelFieldClasses.Normal})  
+    public timestamp? : Date   
 }

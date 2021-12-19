@@ -15,16 +15,16 @@ export class BaseSelectComponent extends MelElement {
   static nextId : number = 1
   controlType  = 'mel-select'
 
-  enumValues : string[]
-  dispEnumValues : string[]
+  enumValues : string[] = []
+  dispEnumValues : string[] = []
   
   protected inputChange = new EventEmitter()
   
   @HostBinding() id: string = `${this.controlType}${BaseSelectComponent.nextId++}`
   @Input() value : any
   @Input() set options( meta : FieldMetadata<any>){
-    this.enumValues = meta.enumValues
-    this.dispEnumValues = meta.display.enumValues? meta.display.enumValues : meta.enumValues  
+    this.enumValues = meta.enumValues || []
+    this.dispEnumValues = meta.display?.enumValues || meta.enumValues || []
   }
   @Input() set changedObs( obs : NextObserver<string>){
     if(obs )

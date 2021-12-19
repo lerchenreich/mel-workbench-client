@@ -1,31 +1,33 @@
 
-import { FieldTypes } from 'mel-common'
-import { Table, Column } from '../metadata/entities';
+import { FieldTypes, MelFieldClasses } from 'mel-common'
+import { Table, Field } from '../metadata/entities';
 import { notBlank, notTrue, notZero } from 'mel-common';
+import { EntityLiteral } from '../types';
 
 @Table( {
   default : [ "Name",  "Domain", "Active","AppTable"],
   lookup :  [ "Name", "Domain"]
 })
-export class MelTable  {
+export class MelTable extends EntityLiteral {
  
-    @Column({type : FieldTypes.String, primaryKeyNo : 1, validators : [notBlank]})
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal, primaryKeyNo : 1, validators : [notBlank]})
     public Name? : string   
 
 
-    @Column({type : FieldTypes.String})  
+    @Field({type : FieldTypes.String, class : MelFieldClasses.Normal})  
     public Domain? : string   
 
-    @Column({type : FieldTypes.Boolean, validators : []})  
+    @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal, validators : []})  
     public Active? : boolean   
 
-    @Column({type : FieldTypes.Boolean, editable : false, validators : []})  
+    @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal, editable : false, validators : []})  
     public AppTable? : boolean   
 
-    @Column({type : FieldTypes.DateTime, editable : false})  
+    @Field({type : FieldTypes.DateTime, class : MelFieldClasses.Normal, editable : false})  
     public timestamp? : Date   
 
     constructor(init?: Partial<MelTable>) {
+      super()
       Object.assign(this, init)
     }
 

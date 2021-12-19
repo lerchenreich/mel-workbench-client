@@ -20,8 +20,8 @@ export class BaseInputComponent extends MelElement {
   public showAssistButton : boolean = false
   
   @Input() value : any
-  @Input() subType : InputSubType
-  @Input() lookupFor : LookupFor
+  @Input() subType : InputSubType = 'none'
+  @Input() lookupFor? : LookupFor 
   @Input() set assistObs(obs : NextObserver<any>){
     if (obs && !this.showAssistButton) {
       this.showAssistButton = true 
@@ -39,15 +39,14 @@ export class BaseInputComponent extends MelElement {
   
   onLookupClick() {
     var lookupData : LookupDialogData = {
-      lookupFor : this.lookupFor,
+      lookupFor : this.lookupFor as LookupFor,
       currValue : this.value
     }
     const dialogRef = this.lookupDialog.open(LookupDialogComponent, {data : lookupData});
     dialogRef.afterClosed().subscribe( lookupResult  => {
       const result = lookupResult as ILookupDialogResult
-      if ( result.ok && (this.value !== result.selectedRow[result.key])){
-        this.value = result.selectedRow[result.key]
-      }
+      if ( result.ok && this.value !== result.selectedRow[result.key])
+          this.value = result.selectedRow[result.key]
     });
   }
 }
