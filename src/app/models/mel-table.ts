@@ -20,7 +20,7 @@ export class MelTable extends EntityLiteral {
     @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal, validators : []})  
     public Active? : boolean   
 
-    @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal, editable : false, validators : []})  
+    @Field({type : FieldTypes.Boolean, class : MelFieldClasses.Normal, editable : false, default : true, validators : []})  
     public AppTable? : boolean   
 
     @Field({type : FieldTypes.DateTime, class : MelFieldClasses.Normal, editable : false})  

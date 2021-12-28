@@ -81,7 +81,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
   
   fieldNames      : string[] = []
   editableFieldIndices : number[] = []
-  private fieldsContext : FieldContext<EntityLiteral> 
+  private defaultFieldcontext : FieldContext<EntityLiteral> 
   
   onSortAction   = new EventEmitter<SortOrder<EntityLiteral>>()
   saveRowRequest = new EventEmitter<SaveRequestEvent>()
@@ -105,7 +105,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       field.data.setNew()
     })
     // this fieldcontext will be assigned to the input data and metadata
-    this.fieldsContext = {
+    this.defaultFieldcontext = {
       
       editable            : true,
       assistObs           : { next : field => { console.info(`Assist requested for field ${field.name}`)} },
@@ -119,8 +119,7 @@ export class ListComponent implements AfterViewInit, OnDestroy {
         next : event => {
           if (event.row.isDirtyAndValid())
             this.saveRowRequest.next({ pageData : event.row })
-        }},
-    //  changedObs      : { next : value => this.changedEmitter.next(value)  }
+        }}
     }
   }
  
@@ -139,8 +138,8 @@ export class ListComponent implements AfterViewInit, OnDestroy {
     if (!this._permissions && ctx.permissions) 
       this.permissions = ctx.permissions
     this.fieldNames = this.fieldMetadata.map( meta => meta.name as string )
-    if (ctx.touchedObs && this.fieldsContext) 
-      this.fieldsContext.touchedObs = ctx.touchedObs as NextObserver<Field>
+    if (ctx.touchedObs) 
+      this.defaultFieldcontext.touchedObs = ctx.touchedObs as NextObserver<Field>
     if (ctx.addRowObs) 
       this.addRowRequest.pipe(untilDestroyed(this)).subscribe(ctx.addRowObs)
     if(ctx.saveObs)
@@ -153,13 +152,14 @@ export class ListComponent implements AfterViewInit, OnDestroy {
   set permissions(p : Permissions) {
     this._permissions = p;
     (this._listContext as ListContext<EntityLiteral>).permissions = p
-    this.fieldsContext.editable =  this.permissions.modify
+    this.defaultFieldcontext.editable =  this.permissions.modify
   }
   
   @ViewChild('melTable', { read: ElementRef }) tableRef: ElementRef<HTMLTableElement>|null = null
   
   fieldContext(row : ListRow<any>, meta : FieldMetadata<any>) : FieldContext<any>{
-    return  Object.assign({ data : row, meta : meta }, this.fieldsContext)
+    this.defaultFieldcontext.editable &&= (meta.editable === undefined)? true : meta.editable
+    return  Object.assign({ data : row, meta : meta }, this.defaultFieldcontext)
   }
 
 
@@ -354,10 +354,10 @@ export class ListComponent implements AfterViewInit, OnDestroy {
               error   : err => onError(),
               complete : CRLF 
             }
-          })
+          })  
         }
       }
-      else CRLF()
+      else  CRLF()
     }
     async function onArrow(onComplete: () => void){
       if (component.isErrorMode) 

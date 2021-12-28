@@ -1,75 +1,93 @@
 import { isEmpty } from 'lodash'
 import { ClientConfig } from "./client.configs"
-import { MelCompanyService } from "./services/melservices"
-import { Observer } from "rxjs-compat"
+import { CompNumberString, CompString, IComp, NumberString } from 'mel-common'
 
-import { StringKeyPair, NumberKeyPair, IKeyPair } from 'mel-common'
-import { map } from 'rxjs/operators'
-
-const cookieRecentApps : string = `Mel-RecentApps` 
+var recentConnections : RecentConnections
+export function createRecentConnections(config : ClientConfig) : RecentConnections {
+  recentConnections = new RecentConnections(config)
+  return recentConnections
+}
+export function connections() : CompString[] | undefined { return recentConnections.recents}
+export function currentConnection() : CompString | undefined { return recentConnections.lastRecent }
+export function otherConnections() : CompString[] { return recentConnections.others }
+export function changeConnection(con : CompString ) : void { recentConnections.lastRecent = con }
 
 var recentApps : RecentApps
-
-export function createRecentApps(companyService : MelCompanyService, config : ClientConfig) : RecentApps {
-  recentApps = new RecentApps(companyService, config)
+export function createRecentApps(config : ClientConfig) : RecentApps{
+  recentApps = new RecentApps(config)
   return recentApps
 }
-
-export function apps() : StringKeyPair[] | undefined { return recentApps.recents}
-export function currentApp() : StringKeyPair | undefined { return recentApps.current }
-export function otherApps() : StringKeyPair[] { return recentApps.others }
-export function changeApp(app : StringKeyPair ) : void { recentApps.current = app }
-
-export function currentCompany() : NumberKeyPair | undefined { return recentApps.currentCompany }
-export function hasCompanies() : boolean { return recentApps.hasCompanies }
-export function otherCompanies() : NumberKeyPair[] { return recentApps.otherCompanies }
-export function companies() : NumberKeyPair[] { return recentApps.companies }
-export function changeCompany(company : NumberKeyPair) { if (recentApps) recentApps.currentCompany = company }
-
-abstract class Recent<P extends IKeyPair<T>, T> {
-  abstract itemName : string
-
-  constructor(public recents? : P[]){
-    if (recents){
-      recents = recents.map( recent => { return this.isInstanceOfPair(recent)? recent : this.newPair() })
-    }
+export function apps() : AppDescr[] | undefined { return recentApps.recents?.map(descr => descr.element)}
+export function lastRecentApp() : AppDescr | undefined { return recentApps.lastRecent?.element }
+export function otherApps() : AppDescr[] { return recentApps.others.map(desc => desc.element) }
+export function changeApp(descr : AppDescr ) : void { recentApps.lastRecent = new CompAppDescr(descr) }
+export function adjustApps(toAdjust : AppDescr[]) : void { recentApps.adjust(toAdjust.map(appDescr => new CompAppDescr(appDescr)))}
+export function findFirstAppByCode(code : string) : AppDescr | undefined { return recentApps.findFirstByCode(code)}
+export class AppDescr {
+  constructor(public url : string, public code : string, public name : string){
   }
-  abstract newPair(pair? : P) : P
-  abstract isInstanceOfPair(recent : P) : boolean
+}
+export class CompAppDescr implements IComp<AppDescr>{
+  constructor(public element : AppDescr){ }
+  compare(other : CompAppDescr) : number { return this.element.url.localeCompare(other.element.url) }
+}
+/*
+export function currentCompany() : NumberKeyPair | undefined { return recentConnections.currentCompany }
+export function hasCompanies() : boolean { return recentConnections.hasCompanies }
+export function otherCompanies() : NumberKeyPair[] { return recentConnections.otherCompanies }
+export function companies() : NumberKeyPair[] { return recentConnections.companies }
+export function changeCompany(company : NumberKeyPair) { if (recentConnections) recentConnections.currentCompany = company }
+*/
+abstract class Recent<E extends IComp<T>, T> {
+  protected abstract key : string
+  protected abstract getInstance(o : T ) : E
+  
+  constructor(protected type : Function , private appCode : string, public recents? : E[]){
+    if (recents){
+      recents = recents.filter( recent => { return (recent as any) instanceof type ? recent : undefined })
+    }
+      
+  }
+  protected get cookieName() : string { return this.appCode + this.key}
 
-  public get current() : P | undefined { return this.recents?.length? this.recents[0] : undefined} 
+  public get lastRecent() : E | undefined { return this.recents?.length? this.recents[0] : undefined} 
   /**
-   * sets the new item at the index 0
+   * sets the lastRecent at the index 0
    */
-  public set current(newCurrentItem : P | undefined) {
-    if (newCurrentItem) {
-      if ( ! this.isInstanceOfPair(newCurrentItem) )
-        newCurrentItem = this.newPair(newCurrentItem)
+  public set lastRecent(lastRecent : E | undefined) {
+    if (lastRecent) {
+      if ( !((lastRecent as E) instanceof this.type) )
+        throw new Error(`item "${lastRecent} is not instance of "${this.type.name}"`)
       if (this.recents){
-        var i = this.recents.findIndex(recent => recent.equals(newCurrentItem as P))
+        var i = this.recents.findIndex(recent => recent.compare(lastRecent) == 0)
         if (i > 0)   
           this.recents = this.recents.splice(i-1, 1) // remove
         if (i != 0 ) 
-          this.add(newCurrentItem)
-        console.info(`${this.itemName} changed to "${newCurrentItem.value}"`)
+          this.add(lastRecent)
+        console.info(`last recent "${this.key}" changed to "${lastRecent.element}"`)
       }
       else {
-        this.recents = [newCurrentItem] 
+        this.recents = [lastRecent] 
       }
     }
   }
-  public get others() : P[] { return this.recents? this.recents.slice(1) : []}
+  public get others() : E[] { return this.recents? this.recents.slice(1) : []}
   /**
    * adds a new item at index 0
    * @param newItem 
    */
-  public store(key : string){
+  public store(){
     if(this.recents)
-      localStorage.setItem(key, JSON.stringify({ recents : this.recents }))
+      localStorage.setItem(this.cookieName + this.key, JSON.stringify({ recents : this.recents }))
   }
-  
-
-  protected add(newItem : P){
+  protected restore() : any {
+    const cookie = localStorage.getItem(this.cookieName + this.key) 
+    if (cookie){
+      var parsedRecents : E[] = JSON.parse(cookie).recents as E[]
+      this.recents = parsedRecents.map(parsedRecent => this.getInstance(parsedRecent.element))  
+    }
+  }
+  protected add(newItem : E){
     if (this.recents)
       this.recents.unshift(...[newItem])
     else 
@@ -80,119 +98,102 @@ abstract class Recent<P extends IKeyPair<T>, T> {
    * in the order of the existing itemlist
    * @param itemsToAdjust 
    */
-  adjust(itemsToAdjust : P[]) : void {
-    function keyPairsIncludes(keyPairs : P[], keyPair : P) : boolean {
-      return keyPairs.some( item => item.equals(keyPair))
-    }
+  public adjust(itemsToAdjust : E[]) : void {
     if (itemsToAdjust){
       if (isEmpty(this.recents)) 
         this.recents = itemsToAdjust
       else { // remove deleted
-        this.recents = this.recents?.filter( recent => keyPairsIncludes(itemsToAdjust, recent))
+        this.recents = this.recents?.filter( recent => itemsToAdjust.some(item => item.compare(recent) == 0))
         if(itemsToAdjust.length && this.recents) // add new
-          this.recents.concat(itemsToAdjust.filter(item => !keyPairsIncludes(this.recents as P[], item)))
+          this.recents.concat(itemsToAdjust.filter(item => !this.recents?.some(recent => recent.compare(item)==0)))
       }
     } 
   }
 }
 
-class RecentCompanies extends Recent<NumberKeyPair, Number> {
-  itemName = 'Company'
-  constructor(recents? : NumberKeyPair[]){
-    super(recents)
-
+export class RecentCompanies extends Recent<CompNumberString, NumberString> {
+  readonly key : string = 'Companies' 
+  constructor(appCode : string, recents? : CompNumberString[]){
+    super(CompNumberString, appCode, recents)
   }
-  public override newPair(pair?: NumberKeyPair): NumberKeyPair {
-      return new NumberKeyPair(pair)
-  }
-  public override isInstanceOfPair(recent: NumberKeyPair): boolean {
-      return recent instanceof NumberKeyPair
-  }
-   
+  protected getInstance(recent : NumberString)  : CompNumberString { return new CompNumberString(recent)}
 }
 
-export class RecentApps extends Recent<StringKeyPair, string> { 
-  itemName = 'App'
-  private recentCompanies = new RecentCompanies()
-  
-  constructor(private companyService : MelCompanyService, private config : ClientConfig){
-    super() 
-    const value = localStorage.getItem(cookieRecentApps)   
-    if (value){
-      var recents : StringKeyPair[] = JSON.parse(value).recents
-      this.recents = recents.map(recent => new StringKeyPair(recent))
-      if (this.current){
-        this.getRecentCompaniesFromCookie()
-        this.refreshCompanies( { complete : () => {
-        if (this.hasCompanies)
-          this.currentCompany = this.currentCompany  
-        }})
-      }
+/**
+ * Stores the url to the app-server of an application
+ */
+export class RecentConnections extends Recent<CompString, string> { 
+  //private recentCompanies = new RecentCompanies()
+  readonly key : string = 'Connections'
+  protected getInstance(recent : string) { return new CompString(recent)}
+
+  constructor(private config : ClientConfig){
+    super(CompString, config.appCode as string) 
+  }
+}
+/**
+ * Stores the app-code (client-name), the corresponding Applicationname and url to the appserver
+ */
+export class RecentApps extends Recent<CompAppDescr, AppDescr> { 
+  //private recentCompanies = new RecentCompanies()
+  readonly key : string = 'AppDescr'
+  protected getInstance(recent :AppDescr) { return new CompAppDescr(recent)}
+
+  constructor(private config : ClientConfig){
+    super(CompAppDescr, config.appCode as string)
+    this.restore() 
+    //if (this.current){
+      //this.getRecentCompaniesFromCookie()
+    //}
+  }
+  public override get lastRecent() : CompAppDescr | undefined { return super.lastRecent as CompAppDescr } 
+  public override set lastRecent(lastRecent : CompAppDescr | undefined) {
+    if (lastRecent){
+      super.lastRecent = lastRecent
+      this.config.appCode = lastRecent.element.code
+      this.store()
     }
   }
-  public override newPair(pair?: StringKeyPair): StringKeyPair {
-    return new StringKeyPair(pair)
+  findFirstByCode( code : string) : AppDescr | undefined{
+    if (this.recents){
+      const result = this.recents.find(recent => recent.element.code === code)
+      return result?.element
+    }
   }
-  public override isInstanceOfPair(recent: StringKeyPair): boolean {
-    return recent instanceof StringKeyPair
-  }
+}
+ /*
   get hasCompanies() : boolean { if (this.recentCompanies.recents) return this.recentCompanies.recents.length > 0; return false }
-  get currentCompany() : NumberKeyPair | undefined { return this.recentCompanies.current }
-  set currentCompany(company : NumberKeyPair | undefined ) {
+  get currentCompany() : NumberString | undefined { return this.recentCompanies.current }
+  set currentCompany(company : NumberString | undefined ) {
     if (company){
       this.recentCompanies.current = company
-      this.config.companyId = Number(( company).key)
+      this.config.companyId = Number((company).key)
       this.storeCompanies()
     }
   }
-  get otherCompanies() : NumberKeyPair[] { if (this.recentCompanies) return this.recentCompanies.others; return [] }
-  get companies() : NumberKeyPair[] { if (this.recentCompanies.recents) return this.recentCompanies.recents; return [] }
+  get otherCompanies() : NumberString[] { if (this.recentCompanies) return this.recentCompanies.others; return [] }
+  get companies() : NumberString[] { if (this.recentCompanies.recents) return this.recentCompanies.recents; return [] }
 
-  override set current(newCurrentApp : StringKeyPair | undefined) {
-    if (newCurrentApp){
-      super.current = newCurrentApp
-      this.store(cookieRecentApps)
-      this.refreshCompanies( { complete : () => this.storeCompanies()} )
+  override get current() : StringKeyPair | undefined { return super.current }
+  override set current(newConnection : StringKeyPair | undefined) {
+    if (newConnection){
+      super.current = newConnection
+      this.store(this.cookieName)
     }
   }
-  override get current() : StringKeyPair | undefined { return super.current }
-
+ 
   private getRecentCompaniesFromCookie(){
-    const value = localStorage.getItem(cookieRecentApps+this.current)
+    const value = localStorage.getItem(this.cookieName+this.current)
     if(value){
       this.recentCompanies = new RecentCompanies(JSON.parse(value).recents)
     }
   }
- 
+
   private storeCompanies() {
     if ( this.hasCompanies && this.current)
-      this.recentCompanies.store(cookieRecentApps + String(this.current.key))
+      this.recentCompanies.store(this.cookieName + String(this.current.key))
   }
+ */
 
-  private refreshCompanies( observer? : Partial<Observer<NumberKeyPair[]>>) : void {
-    if (this.current){
-      this.config.appCode = this.current.key
-      this.companyService.findMany()
-      .pipe( map (companies => companies.map(company => { 
-        return new NumberKeyPair({ key : company.Id as number, value : company.Name as string}) 
-      })))
-      .subscribe( {
-        next :  companies => { 
-          if (this.hasCompanies) 
-            this.recentCompanies.adjust(companies) 
-          if (observer?.next) observer.next(companies)
-        },
-        error : error => { if (observer?.error) observer.error(error) },
-        complete : () => { if (observer?.complete) observer.complete() } 
-      })
-    }
-  }
-  
-  protected add(newApp : StringKeyPair) : void {
-    super.add(newApp)
-    this.refreshCompanies()
-  }
-
-}
  
 

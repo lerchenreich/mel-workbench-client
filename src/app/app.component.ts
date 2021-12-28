@@ -3,7 +3,6 @@ import { AfterContentInit, AfterViewInit, Component, OnInit, ViewChild } from '@
 import { Router } from '@angular/router'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { isEmpty } from 'lodash'
-import { StringKeyPair, NumberKeyPair, GetAppResult } from 'mel-common'
 
 import * as Recent from './recents'
 import * as D from './components/core/directives'
@@ -14,7 +13,9 @@ import { IconService } from './services/icon-service'
 import { FieldTemplates, TemplateService } from './template.service'
 import { AppService } from './services/app-service'
 
-import { createAppCommand, SelectAppDialogComponent } from './components/dialogs/selectApp-dialog/selectApp-dialog.component'
+import { createAppCommand } from './components/dialogs/selectApp-dialog/selectApp-dialog.component'
+import { ConnectDialogComponent } from './components/dialogs/connect-dialog/connect-dialog.component'
+import { MelSetup } from './models/mel-setup'
 
 @Component({
   selector: 'app-root',
@@ -22,9 +23,10 @@ import { createAppCommand, SelectAppDialogComponent } from './components/dialogs
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
- 
-  allApps : StringKeyPair[] = [new StringKeyPair({key : createAppCommand, value : 'CreateApp' })]
-  appName : string = 'No App selected' 
+  readonly noRecentApp : Recent.AppDescr = { url : '', code:'', name :'"No app selected"'} 
+  //readonly createAppDescr = new Recent.AppDescr('',  createAppCommand, 'CreateApp')
+  private _allApps : Recent.AppDescr[] = []
+  currApp  = Recent.lastRecentApp() || this.noRecentApp
 
   constructor(  private router: Router,
                 public translate: TranslateService, 
@@ -38,26 +40,32 @@ export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
     translate.use('de')
 
   } 
-  get currCompany() : NumberKeyPair | undefined { return Recent.currentCompany() }
-  get appCode() : string { return Recent.currentApp()?.key || ''}
+  //get currCompany() : NumberString | undefined { return Recent.currentCompany() }
+  set allApps(apps : Recent.AppDescr[]) {
+    this._allApps = apps
+  }
+  get allApps() : Recent.AppDescr[] { return this._allApps }
+  
+  get appCode() : string { return this.currApp.code as string }
+  get appUrl() : string { return this.currApp.url }
+  get appName() : string { return this.currApp.name as string}
   get title() : string {    
     return `Mel-Workbench - App: ${this.appName}` 
   }
 
- 
   get menuData() { 
-    const companiesExist = Recent.hasCompanies()
-    const recentExist = !isEmpty(Recent.otherApps()) 
-    const appsExist = !isEmpty(this.allApps)
+    //const companiesExist = Recent.hasCompanies()
+    const others = Recent.otherApps()
+    //const appsExist = this.allApps.length > 1
     return {
       data : { 
-        apps        : appsExist ? this.allApps : [],
-        recentApps  : recentExist ? Recent.otherApps() : [],
-        companies   : companiesExist? Recent.otherCompanies() : []
+        apps        : this.allApps,
+        recentApps  : others,
+        //companies   : companiesExist? Recent.otherCompanies() : []
       },
       display : {
-        changeCompany : companiesExist ? 'inline' : 'none',
-        recentApps: recentExist ? 'inline' : 'none',
+        //changeCompany : companiesExist ? 'inline' : 'none',
+        recentApps: isEmpty(others) ? 'none' : 'inline',
         setup : 'inline'
       }
     }
@@ -80,21 +88,56 @@ export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
   }
   ngAfterViewInit() {
     this.templateService.clear()
-    this.templateService.add(FieldTemplates.viewInput, (this.viewInputTpl as D.ViewInput).tpl)
-    this.templateService.add(FieldTemplates.cardInput, (this.cardInputTpl as D.CardInput).tpl)
-    this.templateService.add(FieldTemplates.listInput, (this.listInputTpl as D.ListInput).tpl)
-    this.templateService.add(FieldTemplates.viewBoolean, (this.viewBooleanTpl as D.ViewBoolean).tpl)
-    this.templateService.add(FieldTemplates.listBoolean, (this.listBooleanTpl as D.ListBoolean).tpl)
-    this.templateService.add(FieldTemplates.cardBoolean, (this.cardBooleanTpl as D.CardBoolean).tpl)
-    this.templateService.add(FieldTemplates.viewEnum, (this.viewEnumTpl as D.ViewEnum).tpl)
-    this.templateService.add(FieldTemplates.cardEnum, (this.cardEnumTpl as D.CardEnum).tpl)
-    this.templateService.add(FieldTemplates.listEnum, (this.listEnumTpl as D.ListEnum).tpl)
+    this.templateService.add(FieldTemplates.viewInput,    (this.viewInputTpl    as D.ViewInput).tpl)
+    this.templateService.add(FieldTemplates.cardInput,    (this.cardInputTpl    as D.CardInput).tpl)
+    this.templateService.add(FieldTemplates.listInput,    (this.listInputTpl    as D.ListInput).tpl)
+    this.templateService.add(FieldTemplates.viewBoolean,  (this.viewBooleanTpl  as D.ViewBoolean).tpl)
+    this.templateService.add(FieldTemplates.listBoolean,  (this.listBooleanTpl  as D.ListBoolean).tpl)
+    this.templateService.add(FieldTemplates.cardBoolean,  (this.cardBooleanTpl  as D.CardBoolean).tpl)
+    this.templateService.add(FieldTemplates.viewEnum,     (this.viewEnumTpl     as D.ViewEnum).tpl)
+    this.templateService.add(FieldTemplates.cardEnum,     (this.cardEnumTpl     as D.CardEnum).tpl)
+    this.templateService.add(FieldTemplates.listEnum,     (this.listEnumTpl     as D.ListEnum).tpl)
+  }
+  ngAfterContentInit(){
+    if (this.appService.hasEndpoint){
+      const dismissMsg = 'No service available!'
+      this.appService.getApps()
+      .subscribe( {
+        next : (setups : MelSetup[]) => {
+          this.allApps = setups.map(setup => {
+            const recentApp = Recent.findFirstAppByCode(setup.AppCode as string)
+            return new Recent.AppDescr(recentApp?.url || '', setup.AppCode as string, setup.AppName as string)
+          })
+        },
+        error :  error => {
+          console.error(error); 
+          this.alertService.alertError(error)
+          //this.waitForAppService(dismiss => this.alertService.alertWarning(dismissMsg))
+        }
+      })
+    }
+    else {
+      var modalRef = this.modalService.open(ConnectDialogComponent, {centered : true})
+      modalRef.result.then( (appDescr : Recent.AppDescr) => {
+        Recent.changeApp(appDescr)
+      })
+      .catch(reason => this.alertService.alertWarning(reason))
+    }
   }
 
-  onServiceRunning() {
-    this.appService.getAppDatabases().subscribe(apps => this.allApps = apps)              
+  /*
+  onServiceRunning(url : string) {
+    this.appService.getAppDatabases()
+      .subscribe({
+        next : apps => {
+          this.allApps = apps.map(app => {
+          
+          })
+      })     
+       
   }
- 
+ */
+/*
   waitForAppService(onDismiss : (reason : any) => void) : void {
     var modalRef = this.modalService.open(SelectAppDialogComponent, {centered : true})
     modalRef.result.then( appKeyPair => {
@@ -109,7 +152,7 @@ export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
     .catch(reason => onDismiss(reason))
   }
 
-  changeAppTo(appKey : string) {
+  changeConnectionTo(connection : string) {
     const app = this.allApps.find(app => app.key === appKey)
     if (app){
       Recent.changeApp(app)
@@ -120,39 +163,18 @@ export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
   private appServiceRunning(result : GetAppResult) : boolean{
     if (!isEmpty(result)) { // appservice alive
       if (this.appCode === result.app?.code){
-        this.changeAppTo(result.app.code)
+        this.changeConnectionTo(result.app.code)
         this.onServiceRunning()
         return true
       }
     }
     return false
   }
+  */
   /**
-   * Ping at first the masterservice. if the masterservice is not the appservice, ping the appService
-   * If the appService is not running show the dialog "waitForAppservice", where the user can select another app
+   * if the lastRecent has an endpoint, we get the apps and store them in allApps in order to change to another app
+   * If there is no endpoint, we call the connection-dialog to get the url of the app behind
    */
-  ngAfterContentInit(){
-    const dismissMsg = 'No service available!'
-    this.appService.pingMaster()
-    .subscribe( {
-      next : result => {
-        if (!this.appServiceRunning(result)){          
-          this.appService.getApp()
-          .subscribe({
-            next : result => {
-              if (!this.appServiceRunning(result)) 
-                this.waitForAppService(dismiss => this.alertService.alertWarning(dismissMsg))
-            },
-            error : error => this.waitForAppService(dismiss => this.alertService.alertWarning(dismissMsg))
-          })
-        }
-      },
-      error :  error => {
-        console.error(error); 
-        this.waitForAppService(dismiss => this.alertService.alertWarning(dismissMsg))
-      }
-    })
-  }
 
   /*
   changeCompanyTo(companyId : number) {

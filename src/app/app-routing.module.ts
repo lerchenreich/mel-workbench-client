@@ -8,6 +8,7 @@ import { CreateAppComponent } from './components/create-app/create-app.component
 import { ObjectDesignerComponent } from './components/object-designer/object-designer.component';
 import { CreateServerComponent } from './components/create-server/create-server.component';
 import { CreateClientComponent } from './components/create-client/create-client.component';
+import { PageBlankComponent } from './components/page-blank/page-blank.component';
 
 
 const routes: Routes = [
@@ -23,7 +24,7 @@ const routes: Routes = [
     pathMatch: 'full',  
   //  canActivate: [AuthenticationGuard],
     runGuardsAndResolvers: 'always'},//'/recording-card', pathMatch: 'full'},
-  { path: '**', component: PageNotFoundComponent }
+  { path: '**', component: PageBlankComponent }
 ];
 
 @NgModule({

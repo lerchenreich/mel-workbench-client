@@ -1,14 +1,15 @@
 import { EventEmitter } from '@angular/core';
-import { GetAppResult } from 'mel-common';
+
 import { interval } from 'rxjs';
 import { Observable, Subscription } from 'rxjs/Rx'
 import { AppService } from 'src/app/services/app-service';
+import { MelSetup } from '../models/mel-setup';
 
 
 export declare type PingResult = { 
-  appResult? : GetAppResult
+  melSetup : MelSetup
   state : ServiceStates
-}
+} 
 export enum ServiceStates {
   None = "", 
   Running = "Running", 
@@ -24,16 +25,16 @@ abstract class ServiceObserver {
 
   constructor(protected appService : AppService) {
   }
-  protected abstract ping() : Observable<GetAppResult>
+  protected abstract ping() : Observable<MelSetup>
 
   protected pingService() : void {
     this.ping().subscribe({ 
       next : result => {
-        this.serviceStateEmitter.emit({ appResult : result, state : ServiceStates.Running })
+        this.serviceStateEmitter.emit({ melSetup : result, state : ServiceStates.Running })
         this.stop()  
       },
       error : error => { 
-        this.serviceStateEmitter.emit({ state : ServiceStates.Error})
+        this.serviceStateEmitter.emit({ melSetup : {}, state : ServiceStates.Error})
       }
     }) 
   }
@@ -52,7 +53,7 @@ export class MasterServiceObserver extends ServiceObserver {
   constructor(appService : AppService){
     super(appService)
   }
-  protected override ping() : Observable<GetAppResult> {
+  protected override ping() : Observable<{}> {
     return this.appService.pingMaster()
   }
 }
@@ -61,7 +62,7 @@ export class AppServiceObserver extends ServiceObserver {
   constructor(appService : AppService){
     super(appService)
   }
-  protected override ping() : Observable<GetAppResult> {
+  protected override ping() : Observable<MelSetup> {
     return this.appService.getApp()
   }
 }

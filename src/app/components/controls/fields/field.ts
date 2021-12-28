@@ -51,7 +51,7 @@ export class Field implements OnInit {
   @Input() set context(ctx : FieldContext<EntityLiteral>) { // from MelListComponent
     if (ctx.data && ctx.meta){
       this.ctx.value = ctx.data[ctx.meta.name as string]
-      this.ctx.editable = !!ctx.meta.editable && (this.ctx.editable === undefined?true: this.ctx.editable)
+      this.ctx.editable = ctx.editable// !!ctx.meta.editable && (this.ctx.editable === undefined?true: this.ctx.editable)
     }
     if (!this.ctx.meta){          // only at the first input
       this.addContext(ctx)
@@ -60,7 +60,7 @@ export class Field implements OnInit {
   // Inputs which overwrite the context
   @Input() 
   set editable(b : boolean) { this.ctx.editable = (b==undefined?true:b) && (this.ctx.meta? this.ctx.meta.editable : true) } 
-  get editable() : boolean  { return this.ctx.editable || false}
+  get editable() : boolean  { return this.ctx.editable === undefined? false : this.ctx.editable}
  
   @Input() 
   set subType(s : InputSubType) { this.ctx.subType = s }

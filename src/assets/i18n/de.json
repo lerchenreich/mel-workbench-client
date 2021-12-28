@@ -52,6 +52,16 @@
         "NoConnection" : "Keine Verbindung zum Server"
     }
   },
+  "ConnectDialog" : {
+    "Title" : "Mit Server verbinden",
+    "EnterUrl" : "Geben Sie eine gültige Url ein",
+    "HintUrl" : "<protokoll://host:port> z.B: https://192.168.0.234:4711",
+    "UrlInvalid" : "Die url ist ungültig",
+    "UrlValid" : "Verbindung zur App \"{{name}}\" hergestellt",
+    "AppInvalid" : "Der Server hostet nicht die App \"{{code}}\"",
+    "NoApp" : "Der Server hostet keine App",
+    "AppCodeEmpty" : "Der Server hostet einen \"leeren appcode\""
+  },
   "GettingStarted" : {
     "Title" : "App auswählen",
     "States" : {

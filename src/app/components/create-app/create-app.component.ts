@@ -2,7 +2,7 @@ import { AfterViewInit, Component, Inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs'
-import { FieldTypes, StringKeyPair, CreateAppOptions, notBlank, Version, MelFieldClasses } from 'mel-common';
+import { FieldTypes, StringString, CreateAppOptions, notBlank, Version, MelFieldClasses } from 'mel-common';
 import { fillColumnMetadata } from 'src/app/metadata/entities';
 import { AlertService } from 'src/app/services/alert.service';
 import { AppService } from 'src/app/services/app-service';
@@ -13,8 +13,9 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ModalWaitComponent } from '../dialogs/modal-wait/modal-wait.component';
-import { changeApp } from 'src/app/recents';
+import { AppDescr, changeApp } from 'src/app/recents';
 import { EntityLiteral, FieldMetadata } from '../../types';
+import { MelSetup } from 'src/app/models/mel-setup';
 
 
 class CreateAppEntity extends EntityLiteral {
@@ -32,7 +33,7 @@ declare type CreateAppContextMap = Map<keyof CreateAppEntity, FieldContext<Creat
 @UntilDestroy()
 export class CreateAppComponent implements AfterViewInit {
   
-  appMap     : Map<string,string> = new Map<string, string>()
+  appMap     : Map<string,MelSetup> = new Map<string, MelSetup>()
   contextMap : CreateAppContextMap = new Map<keyof CreateAppEntity, FieldContext<CreateAppEntity>>()
   metaMap = new Map<string, FieldMetadata<CreateAppEntity>>()
   
@@ -53,10 +54,10 @@ export class CreateAppComponent implements AfterViewInit {
   constructor(protected appService : AppService, private modalService : NgbModal, private snackBar : MatSnackBar, protected alert : AlertService, 
               protected router : Router, public translate : TranslateService) {
   
-    forkJoin([this.appService.getDatabases(),this.appService.getAppDatabases()])
+    forkJoin([this.appService.getDatabases(),this.appService.getApps()])
     .subscribe(
-      ([dbNames, keyValues]) => {
-        keyValues.forEach(keyValue => this.appMap.set(keyValue.key, keyValue.value))
+      ([dbNames, melSetups]) => {
+        melSetups.forEach(setup => this.appMap.set(setup.AppCode as string, setup))
         const nonApps = dbNames.filter(name => !this.appMap.has(name)).map(name => name)
         this.metadata[3].enumValues = nonApps
         if (nonApps.length == 1)
@@ -120,8 +121,6 @@ export class CreateAppComponent implements AfterViewInit {
             .subscribe( translated => this.alert.alertError(error, translated) )
           },
           () => {
-            // set the app
-            changeApp(new StringKeyPair( { key : options.appCode, value : options.appName} ))
             modalRef.close()  
             this.router.navigate(['object-designer'], {}) 
           })

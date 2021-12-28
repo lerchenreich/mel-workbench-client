@@ -16,7 +16,7 @@ export class MelSetupService extends EntityService<MelSetup> {
   constructor( httpClient : HttpClient, @Inject(CLIENT_CONFIG) config : ClientConfig) { 
     super(MelSetup, httpClient, config);
   }
-  protected get restEndpoint() : string { return  this.config.restAppEndpoint }
+  protected override get restEndpoint() : string { return  this.config.restAppEndpoint }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -25,7 +25,7 @@ export class MelCompanyService extends EntityService<MelCompany> {
   constructor( httpClient : HttpClient, @Inject(CLIENT_CONFIG) config : ClientConfig) { 
     super(MelCompany, httpClient, config);
   }
-  protected get restEndpoint() : string { return  this.config.restAppEndpoint }
+  protected  override get restEndpoint() : string { return  this.config.restAppEndpoint }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -34,7 +34,7 @@ export class MelTableService extends EntityService<MelTable> {
   constructor( httpClient : HttpClient, @Inject(CLIENT_CONFIG) config : ClientConfig) { 
     super(MelTable, httpClient, config);
   }
-  protected get restEndpoint() : string { return  this.config.restAppEndpoint }
+  protected override get restEndpoint() : string { return  this.config.restAppEndpoint }
 
   //#region trigger
   initColumnTrigger() {
@@ -53,7 +53,7 @@ export class MelFieldService extends EntityService<MelField> {
   constructor( httpClient : HttpClient, @Inject(CLIENT_CONFIG) config : ClientConfig) { 
     super(MelField, httpClient, config);
   }
-  protected get restEndpoint() : string { return  this.config.restAppEndpoint }
+  protected  override get restEndpoint() : string { return  this.config.restAppEndpoint }
 
   protected override initColumnTrigger() {
     this.triggerMap.set("PrimaryKeyNo", this.primaryKeyNo.bind(this))

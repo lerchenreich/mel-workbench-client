@@ -1,0 +1,21 @@
+<div class="modal-header" >
+  <h4 class="modal-title" style="text-align: center;">{{Title | translate }}</h4>
+</div> 
+<div class="modal-body" style="text-align: center;">
+  <mat-form-field style="width: fit-content;">
+    <mat-label>{{ LabelEnterUrl | translate }}</mat-label>
+    <input matInput type="text" [(ngModel)]="url"  (change)="onUrlChanged()"
+      >
+     
+    <mat-hint>{{ HintUrl | translate }}</mat-hint>
+    <span class="melError" [style.margin-bottom]="'1em'"  [style.opacity]="errorText.length">{{errorText}}</span>
+  </mat-form-field>
+  <br/><br/><span>{{appInfo}}</span>
+</div>
+<div class="modal-footer">
+  <button mat-raised-button color="warn" (click)="cancelClicked()">{{'Command.Cancel'|translate}}</button>
+  <button mat-raised-button color="primary" (click)="okClicked()" [disabled]="!releaseOk">{{'Command.Ok'|translate}}</button>
+</div>
+
+
+

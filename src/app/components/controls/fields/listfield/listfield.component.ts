@@ -10,8 +10,6 @@ import { Field} from '../field';
 import { FieldTemplates, TemplateService } from 'src/app/template.service';
 import { FieldContext, FieldNavigationEvent, RowChangedEvent} from 'src/app/components/core/types';
 import { ListRow } from '../../../core/page-data';
-import { EntityLiteral } from 'src/app/types';
-
 
 export type NavigationKeys = 'Tab'|'ShiftTab'|'ArrowUp'|'ArrowDown'|'Enter' 
 export type ShortcutKeys = 'F8'
@@ -24,6 +22,14 @@ export enum FieldModes  {'view', 'edit'}
 })
 @UntilDestroy()
 export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
+  private editInput     : TemplateRef<any>
+  private editBoolean   : TemplateRef<any>
+  private editEnum      : TemplateRef<any>
+  private viewBoolean   : TemplateRef<any>
+  private viewInput     : TemplateRef<any>
+  private viewEnum      : TemplateRef<any>
+
+
   constructor(host: ElementRef,  
               translate : TranslateService, 
               templateService : TemplateService){  
@@ -36,13 +42,6 @@ export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
     this.viewInput    = templateService.assertGet(FieldTemplates.viewInput)
   }
   
-  private editInput     : TemplateRef<any>
-  private editBoolean   : TemplateRef<any>
-  private editEnum      : TemplateRef<any>
-  private viewBoolean   : TemplateRef<any>
-  private viewInput     : TemplateRef<any>
-  private viewEnum      : TemplateRef<any>
-
   private tdElement : HTMLElement | null = null
   private trElement : HTMLElement | null = null
   private editMode = new Subject()
@@ -63,6 +62,8 @@ export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
     }
   }
   get currentTemplate() : TemplateRef<any> {
+    if (this.name.startsWith('Axx'))
+      console.info(`${this.constructor.name}.currentTemplate.Field(${this.name}); Mode:${this.mode} Type: ${this._type} editable:${this.editable}`)
     if (this.mode === FieldModes.view || !this.editable){
       switch(this._type) {
         case FieldTypes.Boolean  : return this.viewBoolean
@@ -181,7 +182,8 @@ export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    //console.info(`${this.constructor.name}.AfterViewInit.Field(${this.name})`)
+    if (this.name.startsWith('Axx'))
+      console.info(`${this.constructor.name}.AfterViewInit.Field(${this.name}); editable:${this.editable}`)
     if (this.editable){ 
       this.viewModeHandler()
       this.editModeHandler()
@@ -252,7 +254,7 @@ export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
         const target = event.target as HTMLElement
 
         var outside =  !this.host.nativeElement.parentElement.contains(target)  // outside the cell AND
-  //      console.log(`Click in row ${targetRowId(target)}, col ${targetColId(target)} is ${outside?'out':'in'}side of ${this.toString()}`)
+        console.log(`Click in row ${targetRowId(target)}, col ${targetColId(target)} is ${outside?'out':'in'}side of ${this.toString()}`)
             outside &&= (target.parentElement?.localName !== 'mat-option')                // not the select-clicks in the mat-select options
         return outside
       }),
@@ -263,7 +265,7 @@ export class ListFieldComponent extends Field implements OnInit, AfterViewInit {
           return false  
         const target = event.target as HTMLElement
         var outside =  !this.host.nativeElement.parentElement.contains(target)  // outside the cell AND
-        //console.log(`Click in row ${targetRowId(target)}, col ${targetColId(target)} is ${outside?'out':'in'}side of ${this.toString()}`)
+        console.log(`Click checkbox in row ${targetRowId(target)}, col ${targetColId(target)} is ${outside?'out':'in'}side of ${this.toString()}`)
         return outside
       }),
     )    

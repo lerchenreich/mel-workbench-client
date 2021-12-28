@@ -9,8 +9,8 @@ import { isEmpty } from 'lodash'
 import { deepCopy, ErrorCategories, FilterOperators, IRenamingRequest, MelError, QueryOptions, SortOrder } from 'mel-common'
 
 import { ClientConfig } from '../../client.configs'
-import { getModulProviderToken} from '../../core'
-import { EntityTypes, Range, EntityLiteral, FieldsMdMap, EntityListLiteral } from '../../types'
+import { APP_MODUL_NAME, CLIENT_MODUL_NAME, getModulProviderToken} from '../../core'
+import { EntityTypes, Range, EntityLiteral, FieldsMdMap } from '../../types'
 import { EntityMetadata } from '../../metadata/entities'
 
 import { ClientFilters} from './client-filters'
@@ -18,6 +18,7 @@ import { FieldConditions,  ClientFilterCondition} from './client-filter-conditio
 import { newValidationError } from './client-condition-expression'
 import { FieldMetadata } from '../../types'
 import { ENTITIES } from 'src/app/models/entities'
+import { BaseService } from './base-service'
 
 declare type ColumnTrigger<Entity> = (row : Entity) => void
 
@@ -41,9 +42,11 @@ export function getQueryParam(options? : any) : string {
 
 declare type TriggerMap = Map<string, ColumnTrigger<EntityLiteral>>
 @Directive()
-export class EntityService<Entity extends EntityLiteral>{
-
-  constructor(private entityFunc : Function,  protected httpClient : HttpClient, protected config : ClientConfig) {   
+export class EntityService<Entity extends EntityLiteral> extends BaseService {
+   
+  constructor(private entityFunc : Function,  protected httpClient : HttpClient, config : ClientConfig) {  
+    super(config) 
+    
     this.entityMetadata = EntityMetadata.get(entityFunc)
     this.lowerSingularName = this.entityMetadata.name.toLowerCase()
     this.lowerPluralName   = this.entityMetadata.pluralName.toLowerCase()
@@ -55,8 +58,8 @@ export class EntityService<Entity extends EntityLiteral>{
     this.triggerMap = new Map<string, ColumnTrigger<EntityLiteral>>()
     this.initColumnTrigger()
   } 
-  
-  protected get restEndpoint() : string { return  this.config.restCompanyEndpoint }
+
+  protected get restEndpoint() : string { return this.config.restCompanyEndpoint }
   protected readonly lowerSingularName : string
   protected readonly lowerPluralName : string
   public readonly entityMetadata : EntityMetadata
@@ -84,14 +87,19 @@ export class EntityService<Entity extends EntityLiteral>{
   protected user : string
  
   static create<Entity extends EntityLiteral>(injector : Injector, entityName : string) : EntityService<Entity> {
-    var serviceModuleId = ENTITIES.find( entityFunction => (entityFunction.name == entityName)) ? 'MelClient' : 'App'
+    var serviceModuleId = ENTITIES.find( entityFunction => (entityFunction.name == entityName)) ? CLIENT_MODUL_NAME : APP_MODUL_NAME
     var service = injector.get(getModulProviderToken(entityName + 'Service', serviceModuleId) as ProviderToken<any>) as EntityService<Entity>
     if (service.entityMetadata)   // the constructor was already called --> service is used by someone else
       service = EntityService.createFrom(service)
     return service
   }
   static createFrom<Entity extends EntityLiteral>(from : EntityService<Entity>) : EntityService<Entity> {
-    return Object.assign(Object.create(from), from)._init()
+    const svc =  Object.assign(Object.create(from), from)
+    svc._filters = new ClientFilters<Entity>(svc.fieldsMdMap)
+    svc._data = Reflect.construct(svc.entityFunc, []) 
+    svc._xData = Reflect.construct(svc.entityFunc, [])
+    svc.options = {}
+    return svc
   }
   protected initColumnTrigger() {}
   afterInit() : Observable<Entity> { return from([this.data as Entity]) }
@@ -746,7 +754,7 @@ export class EntityService<Entity extends EntityLiteral>{
     return getQueryParam(reqOptions)
   }
   private _count() : Observable<number> {
-    const url = `${this.restEndpoint}/${this.lowerPluralName}count/${this.getOptionsQueryParam()}`;
+    const url = `${this.restEndpoint}${this.lowerPluralName}count/${this.getOptionsQueryParam()}`;
     return this.httpClient.get<{count : number}>(url)
           .pipe( map( data => {return data.count}))
   }
@@ -754,48 +762,51 @@ export class EntityService<Entity extends EntityLiteral>{
      return this.httpClient.get<Entity>(`${this.restEndpoint}/${this.lowerSingularName}/${this.getOptionsQueryParam()}`)
   }
   private _findMany() : Observable<Entity[]>{
-    const url = `${this.restEndpoint}/${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
+    const url = `${this.restEndpoint}${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
     return this.httpClient.get<Entity[]>(url)
   }
   private _findFirst() : Observable<Entity> {
-    const url = `${this.restEndpoint}/${this.lowerSingularName}first/${this.getOptionsQueryParam()}`
+    const url = `${this.restEndpoint}${this.lowerSingularName}first/${this.getOptionsQueryParam()}`
     return this.httpClient.get<Entity>(url)
   }
   private _findLast() :Observable<Entity> {
-    const url = `${this.restEndpoint}/${this.lowerSingularName}last/${this.getOptionsQueryParam()}`;
+    const url = `${this.restEndpoint}${this.lowerSingularName}last/${this.getOptionsQueryParam()}`;
     return this.httpClient.get<Entity>(url)       
   }
+  readonly contentType = {'content-type':'application/json'}
+  readonly httpOptions = {headers:this.contentType}
   private _calcFields(fieldsToCalc : string[], entity : Entity) : Observable<Entity> {
-    const url = `${this.restEndpoint}/${this.lowerSingularName}calcfields/?options=${JSON.stringify(fieldsToCalc)}`;
-    return this.httpClient.put<Entity>(url, JSON.stringify(entity))
+    const url = `${this.restEndpoint}${this.lowerSingularName}calcfields/?options=${JSON.stringify(fieldsToCalc)}`;
+    return this.httpClient.put<Entity>(url, JSON.stringify(entity), this.httpOptions)
   }
   private _insert(entity : Entity) : Observable<Entity> {
-    var url = `${this.restEndpoint}/${this.lowerSingularName}/${this.getOptionsQueryParam()}`;
-    return this.httpClient.post<Entity>(url, JSON.stringify(entity))
+    var url = `${this.restEndpoint}${this.lowerSingularName}/${this.getOptionsQueryParam()}`;
+    return this.httpClient.post<Entity>(url, JSON.stringify(entity), this.httpOptions)
   }
   private _insertMany(entities : Entity[]) : Observable<UpdateResult> {
-    var url = `${this.restEndpoint}/${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
-    return this.httpClient.post<UpdateResult>(url, JSON.stringify(entities))
+    var url = `${this.restEndpoint}${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
+    return this.httpClient.post<UpdateResult>(url, JSON.stringify(entities), this.httpOptions)
   }
   private _rename(renamingRequest : IRenamingRequest<Entity>) : Observable<Entity> {
-      var url = `${this.restEndpoint}/${this.lowerSingularName}rename/`;
-
-      return this.httpClient.put<Entity>(url, JSON.stringify(renamingRequest))   
+      var url = `${this.restEndpoint}${this.lowerSingularName}rename/`;
+      return this.httpClient.put<Entity>(url, JSON.stringify(renamingRequest), this.httpOptions)   
   }
   private _update(entity : Entity) : Observable<Entity> {
-      var url = `${this.restEndpoint}/${this.lowerSingularName}/${this.getOptionsQueryParam()}`
-      return this.httpClient.put<Entity>(url, JSON.stringify(entity))
+      var url = `${this.restEndpoint}${this.lowerSingularName}/${this.getOptionsQueryParam()}`
+      //console.info('Updating: '+JSON.stringify(entity))
+      return this.httpClient.put<Entity>(url, JSON.stringify(entity), this.httpOptions)
   }
   private _updateMany(partialEntity : Partial<Entity>) : Observable<UpdateResult> {
-      var url = `${this.restEndpoint}/${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
-      return this.httpClient.put<UpdateResult>(url, JSON.stringify(partialEntity))
+      var url = `${this.restEndpoint}${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
+      return this.httpClient.put<UpdateResult>(url, JSON.stringify(partialEntity), this.httpOptions)
   }
   private _delete(partialEntity : Partial<Entity>) : Observable<DeleteResult> {
-    const url = `${this.restEndpoint}/${this.lowerSingularName}/${this.getOptionsQueryParam()}` 
-    return this.httpClient.request<DeleteResult>('delete', url, {body:partialEntity})    
+    const url = `${this.restEndpoint}${this.lowerSingularName}/${this.getOptionsQueryParam()}` 
+    return this.httpClient.request<DeleteResult>('delete', url, {body:partialEntity, headers:this.contentType})    
   }
+
   private _deleteMany() : Observable<DeleteResult> {
-    var url = `${this.restEndpoint}/${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
+    var url = `${this.restEndpoint}${this.lowerPluralName}/${this.getOptionsQueryParam()}`;
     return this.httpClient.delete<DeleteResult>(url)
    
   }

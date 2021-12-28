@@ -74,7 +74,7 @@ export abstract class ListPage<Entity extends EntityLiteral> extends Page<Entity
 
   public dataSource  = new MatTableDataSource<ListRow<Entity>>()
   protected pageSize : number = 20
-  public locked : boolean = true
+  public locked : boolean = false
   public sortOrder? : SortOrder<Entity>
   protected totalRecCount = 0  // the total number of records within the filters
   public currPageNo : number = -1

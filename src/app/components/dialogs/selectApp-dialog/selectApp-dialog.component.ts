@@ -3,11 +3,12 @@ import { TranslateService } from '@ngx-translate/core';
 import { isEmpty } from 'lodash'
 import { ClientConfig, CLIENT_CONFIG } from 'src/app/client.configs';
 import { AppService } from 'src/app/services/app-service';
-import { AppServiceObserver, MasterServiceObserver, ServiceStates} from '../../serviceObserver';
+import { AppServiceObserver, MasterServiceObserver, PingResult, ServiceStates} from '../../serviceObserver';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AlertService } from 'src/app/services/alert.service';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { StringKeyPair } from 'mel-common';
+import { StringString } from 'mel-common';
+import { MelSetup } from 'src/app/models/mel-setup';
 
 export const createAppCommand = "__createApp__"
 
@@ -45,7 +46,7 @@ export class SelectAppDialogComponent implements OnInit {
 
   appState : ServiceStates = ServiceStates.None
   appServiceObserver : AppServiceObserver
-  appKeyPairs : StringKeyPair[] = []
+  apps : MelSetup[] = []
 
   configAppCode? : string
 
@@ -57,17 +58,17 @@ export class SelectAppDialogComponent implements OnInit {
     this.masterServiceObserver.serviceStateObs.subscribe( result => {
       this.masterState = result.state
       if (result.state === ServiceStates.Running){
-        this.appService.getAppDatabases().subscribe({
-          next : keyValues => this.appKeyPairs = keyValues, 
+        this.appService.getApps().subscribe({
+          next : setups => this.apps = setups, 
           error : error => this.alertService.alertError(error),
           complete : () => this.waitingFor = WaitingFor.AppService
         })
       }
     }) 
     this.appServiceObserver = new AppServiceObserver(appService)
-    this.appServiceObserver.serviceStateObs.subscribe(result => {
+    this.appServiceObserver.serviceStateObs.subscribe( (result : PingResult) => {
       this.appState = result.state
-      if (result.state === ServiceStates.Running && result.appResult?.app?.code == this.config.appCode){
+      if (result.state === ServiceStates.Running && result.melSetup.AppCode == this.config.appCode){
         this.waitingFor = WaitingFor.None
       }
     })
@@ -104,20 +105,20 @@ export class SelectAppDialogComponent implements OnInit {
   }
   onSelectionChanged(){
     if (this.selectedAppCode !== createAppCommand){
-      this.config.appCode = this.selectedAppCode
+      this.config.appCode = this.selectedAppCode as string
       this.waitingFor = WaitingFor.AppService
     }
   }
   cancelClicked() {
     this.waitingFor = WaitingFor.None
-    this.config.appCode = this.configAppCode
+    this.config.appCode = this.configAppCode as string
     this.activeModal.dismiss()
   }
   okClicked(){
     if (this.selectedAppCode === createAppCommand)
-      this.activeModal.close(new StringKeyPair({key : this.selectedAppCode}))
+      this.activeModal.close(new StringString({key : this.selectedAppCode}))
     else 
-      this.activeModal.close(this.appKeyPairs.find( pair => pair.key === this.selectedAppCode))
+      this.activeModal.close(this.apps.find( pair => pair.key === this.selectedAppCode))
   }
 
   ngOnInit() {

@@ -9,7 +9,7 @@ import { BaseCheckboxComponent } from '../base-checkbox';
     [checked]="value" 
     [changedObs]="changedObs"
     [style.margin-bottom]="marginBottom" 
-    [editable]="editable"   
+    [editable]="editable"
     aria-label=""
     (change)="onChange($event)">
   </mat-checkbox>`,

@@ -4,6 +4,7 @@ import { AlertService} from './alert.service'
 import { Observable, of } from 'rxjs';
 import { catchError} from 'rxjs/operators';
 import { ClientConfig, CLIENT_CONFIG} from '../client.configs';
+import { BaseService } from './core/base-service';
 
 export interface DownloadOptions {
   url : string,
@@ -14,13 +15,13 @@ export interface DownloadOptions {
 @Injectable({
   providedIn: 'root'
 })
-export class DownloadService {
+export class DownloadService extends BaseService {
 
-  apiUrl : string;
+  get apiUrl() : string { return this.config.restAppEndpoint }
   private alertService : AlertService
 
   constructor(private client : HttpClient, @Inject(CLIENT_CONFIG) config : ClientConfig) {     
-    this.apiUrl = config.restAppEndpoint
+    super(config)
     this.alertService = new AlertService()
   }
 
