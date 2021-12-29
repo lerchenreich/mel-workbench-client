@@ -13,7 +13,7 @@ import { IconService } from './services/icon-service'
 import { FieldTemplates, TemplateService } from './template.service'
 import { AppService } from './services/app-service'
 
-import { createAppCommand } from './components/dialogs/selectApp-dialog/selectApp-dialog.component'
+//import { createAppCommand } from './components/dialogs/selectApp-dialog/selectApp-dialog.component'
 import { ConnectDialogComponent } from './components/dialogs/connect-dialog/connect-dialog.component'
 import { MelSetup } from './models/mel-setup'
 
@@ -112,7 +112,6 @@ export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
         error :  error => {
           console.error(error); 
           this.alertService.alertError(error)
-          //this.waitForAppService(dismiss => this.alertService.alertWarning(dismissMsg))
         }
       })
     }
@@ -125,66 +124,6 @@ export class AppComponent  implements OnInit, AfterViewInit, AfterContentInit {
     }
   }
 
-  /*
-  onServiceRunning(url : string) {
-    this.appService.getAppDatabases()
-      .subscribe({
-        next : apps => {
-          this.allApps = apps.map(app => {
-          
-          })
-      })     
-       
-  }
- */
-/*
-  waitForAppService(onDismiss : (reason : any) => void) : void {
-    var modalRef = this.modalService.open(SelectAppDialogComponent, {centered : true})
-    modalRef.result.then( appKeyPair => {
-      if (appKeyPair.key === createAppCommand)
-        this.router.navigate(['create-app'], {})
-      else {
-        Recent.changeApp(appKeyPair)
-        this.appName = appKeyPair.value
-        this.onServiceRunning()
-      }
-    })
-    .catch(reason => onDismiss(reason))
-  }
-
-  changeConnectionTo(connection : string) {
-    const app = this.allApps.find(app => app.key === appKey)
-    if (app){
-      Recent.changeApp(app)
-      this.appName = app.value
-    }
-  }
-
-  private appServiceRunning(result : GetAppResult) : boolean{
-    if (!isEmpty(result)) { // appservice alive
-      if (this.appCode === result.app?.code){
-        this.changeConnectionTo(result.app.code)
-        this.onServiceRunning()
-        return true
-      }
-    }
-    return false
-  }
-  */
-  /**
-   * if the lastRecent has an endpoint, we get the apps and store them in allApps in order to change to another app
-   * If there is no endpoint, we call the connection-dialog to get the url of the app behind
-   */
-
-  /*
-  changeCompanyTo(companyId : number) {
-    if (Recent.hasCompanies()) {
-      Recent.changeCompany(new NumberKeyPair( {key: companyId, value : ""}) )
-      this.router.navigate([''], {})
-    }
-    else this.router.navigate(['home'], {})
-    
-  }
-  */
+  
 }
 

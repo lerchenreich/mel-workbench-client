@@ -104,10 +104,8 @@ export class ListComponent implements AfterViewInit, OnDestroy {
       field.data.prepared = false
       field.data.setNew()
     })
-    // this fieldcontext will be assigned to the input data and metadata
-    this.defaultFieldcontext = {
-      
-      editable            : true,
+    // this fieldcontext will be assigned to the input data and metadata. see: listfieldContext
+    this.defaultFieldcontext = { 
       assistObs           : { next : field => { console.info(`Assist requested for field ${field.name}`)} },
       initializationObs   : { next : field => {
           if (field.colIndex == this.lastEditableColIndex)
@@ -122,7 +120,18 @@ export class ListComponent implements AfterViewInit, OnDestroy {
         }}
     }
   }
- 
+
+  /**
+   * 
+   * @param row  the row data of the current row to display
+   * @param meta the metadata from the model of the field
+   * @returns    the merged objects row, metadata and field-context
+   */
+  public listfieldContext(row : ListRow<any>, meta : FieldMetadata<any>) : FieldContext<any>{
+    const editable = ((meta.editable === undefined)? true : meta.editable) && this.permissions.modify 
+    return  Object.assign({ data : row, meta : meta }, this.defaultFieldcontext, { editable : editable })
+  }
+
   get tableElement() : HTMLTableElement | null  { return this.tableRef? this.tableRef.nativeElement : null }
   get permissions() : Permissions { return this._permissions as Permissions}
   set parentPagemode(mode : PageModes){ this._parentPageMode = mode }
@@ -152,15 +161,11 @@ export class ListComponent implements AfterViewInit, OnDestroy {
   set permissions(p : Permissions) {
     this._permissions = p;
     (this._listContext as ListContext<EntityLiteral>).permissions = p
-    this.defaultFieldcontext.editable =  this.permissions.modify
+    //this.defaultFieldcontext.editable =  this.permissions.modify
   }
   
   @ViewChild('melTable', { read: ElementRef }) tableRef: ElementRef<HTMLTableElement>|null = null
   
-  fieldContext(row : ListRow<any>, meta : FieldMetadata<any>) : FieldContext<any>{
-    this.defaultFieldcontext.editable &&= (meta.editable === undefined)? true : meta.editable
-    return  Object.assign({ data : row, meta : meta }, this.defaultFieldcontext)
-  }
 
 
  // #region row

@@ -12,7 +12,7 @@
         <ng-container matColumnDef="{{meta.name}}"> 
           <th mat-header-cell id="{{meta.name}}" *matHeaderCellDef mat-sort-header="{{meta.name}}">{{meta.display.caption}}</th>
           <td mat-cell *matCellDef="let row;" tabindex="{{j}}" id="{{j}}"> 
-            <mel-list-field [attr.vertical-align]="top" [context]="fieldContext(row, meta)" [colIndex]="j"></mel-list-field> 
+            <mel-list-field [attr.vertical-align]="top" [context]="listfieldContext(row, meta)" [colIndex]="j"></mel-list-field> 
           </td>  
         </ng-container>
       </ng-container>
