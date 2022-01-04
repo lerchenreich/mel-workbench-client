@@ -1,0 +1,29 @@
+<button mat-button routerLink="/meltable-list">{{'Menu.Entities'|translate}}</button>
+<button mat-icon-button [matMenuTriggerFor]="appMenu" [matMenuTriggerData]="menuData"><mat-icon>more_vert</mat-icon></button>
+
+<mat-menu #appMenu="matMenu"> 
+  <ng-template matMenuContent let-display="display" let-data="data">
+    <a mat-menu-item routerLink="/create-server" >{{'Menu.CreateAppServer' | translate }}</a>   
+    <a mat-menu-item routerLink="/create-client" >{{'Menu.CreateAppClient' | translate }}</a>   
+    <a mat-menu-item [style.display]="inline"  routerLink="/setup-card" >{{'Menu.Setup' | translate }}</a>   
+    <a mat-menu-item routerLink="/create-app" >{{'GettingStarted.Options.Create' | translate }}</a>   
+   <button mat-menu-item  [matMenuTriggerFor]="allApps"  [matMenuTriggerData]="data" >{{'Menu.AllApps' | translate }}</button>  
+    <!--button mat-menu-item [style.display]="display.changeCompany"  [matMenuTriggerFor]="changeCompany" [matMenuTriggerData]="data" >{{'Menu.ChangeCompany' | translate }}</button-->  
+  </ng-template>
+</mat-menu>    
+
+<mat-menu #allApps="matMenu">
+  <ng-template matMenuContent let-apps="apps">
+    <ng-container *ngFor="let app of apps"> 
+      <button mat-menu-item (click)="changeAppTo(app.code)">{{app.name}}</button> 
+    </ng-container>
+  </ng-template>
+</mat-menu>
+
+  <!--mat-menu #changeCompany="matMenu">
+    <ng-template matMenuContent let-companies="companies">
+      <ng-container *ngFor="let company of companies"> 
+        <button mat-menu-item (click)="changeCompanyTo(company.key)">{{company.value}}</button> 
+      </ng-container>
+    </ng-template>
+  </mat-menu-->

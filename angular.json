@@ -41,7 +41,7 @@
               "node_modules/jquery/dist/jquery.min.js"
             ],
             "allowedCommonJsDependencies": [
-             "validator", "moment"
+             "validator", "moment","mel-common"
            ],
             "vendorChunk": true,
             "extractLicenses": false,

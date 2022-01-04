@@ -5,12 +5,8 @@ import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs'
 
 import { GetTablesOptions } from 'mel-common';
-import { AppService } from '../../../services/app-service';
-import { ListPage } from '../../core/list.page';
-import { ListRow } from '../../core/page-data';
-import { MelTable } from '../../../models/mel-table';
-import { EntityLiteral, FieldMetadata, FieldsMdMap } from 'src/app/types';
-import { EntityMetadata } from 'src/app/metadata/entities';
+import { AppService } from "mel-client"
+import { ListPage, ListRow, MelTable, FieldsMdMap } from "mel-client"
 
 @Component({
   selector: 'apptables-dialog',
@@ -18,12 +14,15 @@ import { EntityMetadata } from 'src/app/metadata/entities';
   styleUrls: ['./apptables-dialog.component.css']
 })
 export class AppTablesDialogComponent extends ListPage<MelTable> implements OnInit{
-
   activeTables : string [] = []
  
-  constructor(  public dialogRef: MatDialogRef<AppTablesDialogComponent>, private appService : AppService,
-                injector : Injector, translateService : TranslateService, dialog : MatDialog, snackBar  : MatSnackBar) { 
-    super(injector, translateService, dialog, snackBar)
+  constructor(  public dialogRef: MatDialogRef<AppTablesDialogComponent>, 
+                private appService : AppService,
+                injector : Injector, 
+                public translate : TranslateService, 
+                dialog : MatDialog, 
+                snackBar  : MatSnackBar) { 
+    super(injector, translate, dialog, snackBar)
     this.entityName = MelTable.name
   }
 

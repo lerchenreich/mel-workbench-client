@@ -25,14 +25,18 @@ import { MatPaginatorModule } from '@angular/material/paginator'
 import { MatProgressBarModule } from '@angular/material/progress-bar'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { MatRadioModule } from '@angular/material/radio'
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSliderModule } from '@angular/material/slider'
+//import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+//import { MatSliderModule } from '@angular/material/slider'
 import { MatSnackBarModule } from '@angular/material/snack-bar'
 import { MatTableModule } from '@angular/material/table'
 import { MatSortModule } from '@angular/material/sort'
 import { MatExpansionModule } from '@angular/material/expansion'
 
 import { NgxSliderModule } from "@angular-slider/ngx-slider"
+
+import { MatFormFieldModule }                     from '@angular/material/form-field';
+import { FormsModule, ReactiveFormsModule}        from '@angular/forms'
+
 /*
 import { ColorPickerModule } from 'ngx-color-picker'
 
@@ -99,12 +103,16 @@ import { MatChipsModule } from '@angular/material/chips';
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatRadioModule,
-    MatSliderModule,
-    MatSlideToggleModule,
+    //MatSliderModule,
+    //MatSlideToggleModule,
     MatSnackBarModule,
     MatToolbarModule,
     MatTooltipModule,
     MatExpansionModule,
+    
+    MatFormFieldModule,
+    FormsModule, 
+    ReactiveFormsModule
   ]
 })
 export class MaterialModule {}

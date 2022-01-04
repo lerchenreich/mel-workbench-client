@@ -4,9 +4,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
-import {isEmpty } from 'lodash'
-import { MelTable } from 'src/app/models/mel-table';
-import { Card } from '../../core/card';
+import { isEmpty } from 'lodash'
+
+import { MelTable, Card } from 'mel-client';
 
 
 @Component({

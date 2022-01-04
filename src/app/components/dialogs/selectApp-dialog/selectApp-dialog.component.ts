@@ -1,14 +1,13 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { isEmpty } from 'lodash'
-import { ClientConfig, CLIENT_CONFIG } from 'src/app/client.configs';
-import { AppService } from 'src/app/services/app-service';
-import { AppServiceObserver, MasterServiceObserver, PingResult, ServiceStates} from '../../serviceObserver';
 import { UntilDestroy } from '@ngneat/until-destroy';
-import { AlertService } from 'src/app/services/alert.service';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+
+import { isEmpty } from 'lodash'
 import { StringString } from 'mel-common';
-import { MelSetup } from 'src/app/models/mel-setup';
+
+import { ClientConfig, CLIENT_CONFIG, AppService,AlertService, MelSetup } from 'mel-client';
+import { AppServiceObserver, MasterServiceObserver, PingResult, ServiceStates } from 'src/app/serviceObserver';
 
 export const createAppCommand = "__createApp__"
 
@@ -50,8 +49,10 @@ export class SelectAppDialogComponent implements OnInit {
 
   configAppCode? : string
 
-  constructor(public activeModal : NgbActiveModal, protected appService : AppService, 
-              public alertService : AlertService, public translate : TranslateService, 
+  constructor(public activeModal : NgbActiveModal, 
+              protected appService : AppService, 
+              public alertService : AlertService, 
+              public translate : TranslateService, 
               @Inject(CLIENT_CONFIG) public config : ClientConfig) {
     this.configAppCode = this.selectedAppCode = this.config.appCode
     this.masterServiceObserver = new MasterServiceObserver(appService)

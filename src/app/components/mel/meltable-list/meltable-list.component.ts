@@ -3,29 +3,25 @@ import { AfterViewInit, Component, Injector } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { forkJoin, Observable, BehaviorSubject, Subject}  from 'rxjs';
+
 import { map } from 'rxjs/operators'
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
 import { TableMetadata, sqlToFieldtypesMap} from 'mel-common'
 
-import { ListRouted } from '../../core/list.routed';
-import { MelTable } from '../../../models/mel-table';
-import { AppTablesDialogComponent } from '../../dialogs/apptables-dialog/apptables-dialog.component';
-import { EntityService } from '../../../services/core/entityService';
-import { forkJoin, Observable, BehaviorSubject, Subject} from 'rxjs';
-import { FieldInfo } from '../../../types'
-import { MelField } from '../../../models/mel-field'
-import { MelFieldService } from '../../../services/melservices';
-import { DialogButtons, IMessageDialogData, MessageDialogComponent, MessageResults } from '../../dialogs/message-dialog/message-dialog.component';
-import { ProgressDialogComponent } from '../../dialogs/progress-dialog/progress-dialog.component';
+import { ListRouted, MelTable, FieldInfo, MelField }  from 'mel-client';
+import { DialogButtons, IMessageDialogData, 
+         MessageDialogComponent, MessageResults , 
+         ProgressDialogComponent }                    from 'mel-client';
+import { AppService, MelFieldService, EntityService } from 'mel-client'
 
-import { AppService } from '../../../services/app-service'
-
+import { AppTablesDialogComponent }                   from '../../dialogs/apptables-dialog/apptables-dialog.component';       
 
 @Component({
   selector: 'app-meltable-list',
   templateUrl: './meltable-list.component.html',
-  styleUrls: ['../../core/list.component.css']
+  styleUrls: ['./meltable-list.css']
 })
 @UntilDestroy()
 export class MelTableListComponent extends ListRouted<MelTable> implements  AfterViewInit {
