@@ -2,8 +2,8 @@
 import { ClientConfig } from 'mel-client'
 
 //#region app
-import manifest from '../../package.json'
-export const CLIENT_APP_CONFIG  = new ClientConfig(manifest.name)
+//import manifest from '../../package.json'
+//export const CLIENT_APP_CONFIG  = new ClientConfig(manifest.name)
 //#endregion app
 
 

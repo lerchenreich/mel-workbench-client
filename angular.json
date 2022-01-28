@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "mel-client-13test": {
+    "mel-workbench-client": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -27,8 +27,7 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets",
-              "src/assets/icons"
+              "src/assets"
             ],
             "styles": [
               "src/styles.css",
@@ -41,7 +40,7 @@
               "node_modules/jquery/dist/jquery.min.js"
             ],
             "allowedCommonJsDependencies": [
-             "validator", "moment","mel-common"
+             "validator", "moment","mel-common", "mel-workbench-api"
            ],
             "vendorChunk": true,
             "extractLicenses": false,
@@ -84,12 +83,12 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "mel-client-13test:build",
+            "browserTarget": "mel-workbench-client:build",
             "port" : 3041
           },
           "configurations": {
             "production": {
-              "browserTarget": "mel-client-13test:build:production",
+              "browserTarget": "mel-workbench-client:build:production",
               "port" : 3041
             }
           }
@@ -97,7 +96,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "mel-client-13test-13test:build"
+            "browserTarget": "mel-workbench-client:build"
           }
         },
         "test": {
@@ -121,16 +120,16 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "mel-client-13test:serve"
+            "devServerTarget": "mel-workbench-client:serve"
           },
           "configurations": {
             "production": {
-              "devServerTarget": "mel-client-13test:serve:production"
+              "devServerTarget": "mel-workbench-client:serve:production"
             }
           }
         }
       }
     }
   },
-  "defaultProject": "mel-client-13test"
+  "defaultProject": "mel-workbench-client"
 }

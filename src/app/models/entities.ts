@@ -1,1 +1,3 @@
-export const appEntities = []
+import { CreateAppDlgData } from "./createapp-dialog";
+
+export const appEntities = [CreateAppDlgData]

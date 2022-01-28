@@ -44,7 +44,30 @@
             "endsPattern": "^.*Compiled successfully.*"
           }
         }
+      },
+      {
+        "label": "Renderer.Serve",
+        "type": "shell",
+        "command": "ng serve",
+        "isBackground": true,
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": {
+          "owner": "typescript",
+          "source": "ts",
+          "applyTo": "closedDocuments",
+          "fileLocation": ["relative", "${cwd}"],
+          "pattern": "$tsc",
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^.*",
+            "endsPattern": "^.*Compiled successfully.*"
+          }
+        }
       }
+
      
     ]
   }

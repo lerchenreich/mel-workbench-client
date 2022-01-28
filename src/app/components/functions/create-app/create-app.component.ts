@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, Inject } from '@angular/core';
+/*
+import { AfterViewInit, Component} from '@angular/core';
 import { Router } from '@angular/router';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -7,9 +8,10 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs'
 
-import { FieldTypes, CreateAppOptions, notBlank, Version, MelFieldClasses } from 'mel-common' 
+import { FieldTypes, notBlank, Version, MelFieldClasses, EntityLiteral } from 'mel-common' 
 import { fillColumnMetadata , AlertService , AppService, CardData, FieldContext, 
-         ModalWaitComponent , EntityLiteral, FieldMetadata , MelSetup } from 'mel-client';
+         ModalWaitComponent , FieldMetadata , MelSetup } from 'mel-client';
+import { CreateAppOptions } from 'mel-workbench-api';
 
 
 class CreateAppEntity extends EntityLiteral {
@@ -89,7 +91,7 @@ export class CreateAppComponent implements AfterViewInit {
     try{
       if (this.cardData && await this.cardData.validate()){
         const vRec = this.cardData?.assertVRec
-        const options : CreateAppOptions = {
+        const options : CreateAppOptions= {
           dropExistingAppDatabase : true,
           appCode : vRec.appCode as string,
           appName : vRec.appName as string,
@@ -133,3 +135,4 @@ export class CreateAppComponent implements AfterViewInit {
   }
 
 }
+*/

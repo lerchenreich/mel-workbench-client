@@ -2,6 +2,7 @@
 import { AfterViewInit, Component, Inject, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+/*
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core'
@@ -9,9 +10,11 @@ import { OpenDialogOptions, OpenDialogReturnValue } from 'electron/renderer'
 import JSZip from 'jszip';
 import { ElectronService } from 'ngx-electron';
 
-import { CreateServerProjectOptions, notBlank , FieldTypes, MelFieldClasses } from 'mel-common'
+import { EntityLiteral, notBlank , FieldTypes, MelFieldClasses } from 'mel-common'
 import { ClientConfig, CLIENT_CONFIG, fillColumnMetadata, AlertService, AppService ,CardData, 
-         FieldContext, BaseInputComponent, ModalWaitComponent, EntityLiteral, FieldMetadata } from 'mel-client'
+         FieldContext, BaseInputComponent, ModalWaitComponent,  FieldMetadata } from 'mel-client'
+import { CreateServerProjectOptions } from 'mel-workbench-api';
+import { WorkbenchService } from 'src/app/services/workbench-service';
 
 class CreateServerEntity extends EntityLiteral{
   name? : string
@@ -44,7 +47,7 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
     { name : "targetDir",   type : FieldTypes.String, class : MelFieldClasses.None, validators : [notBlank], editable:false, }
   ]
 
-  constructor(private modalService : NgbModal, protected appService : AppService,
+  constructor(private modalDialog : NgbModal, protected workbenchService : WorkbenchService,
               private eSvc : ElectronService,
               private router : Router,
               public alert : AlertService, private snackBar : MatSnackBar,
@@ -107,17 +110,17 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
           author: 'a.berger',
           license : 'MIT',
           serverPort : 4711,
-          databaseConfiguration : { host : '192.168.0.108', port : 3345, username : 'root', password : '1', database : '' },
+          dbConfig : { host : '192.168.0.108', port : 3345, username : 'root', password : '1', database : '' },
           databaseType : 'mysql',
           description : vRec.description as string,
         }
-        var modalRef = this.modalService.open(ModalWaitComponent, {centered : true})
+        var modalRef = this.modalDialog.open(ModalWaitComponent, {centered : true})
         modalRef.componentInstance.title = 'CreateServer.Title'
         modalRef.componentInstance.action = 'CreateServer.WaitFor'
         modalRef.componentInstance.actionContext = options
-        this.appService.createServerProject(options)
-        .subscribe( 
-          async base64Encoded => {
+        this.workbenchService.createServerProject(options)
+        .subscribe( {
+          next : async base64Encoded => {
             var serverZip = await JSZip.loadAsync(base64Encoded, {base64 : true, createFolders : true})
             const projectZipFolder = serverZip.folder(vRec.name as string)
             if (projectZipFolder) { //create the folderstructure
@@ -141,15 +144,16 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
               }
             }
           },
-          error => {
+          error : error => {
             modalRef.close()
             this.translate.get(`CreateServer.Failed`, options)
             .subscribe( translated => this.alert.alertError(error, translated) )
           },
-          () => {
+          complete: () => {
             modalRef.close()  
             this.router.navigate(['object-designer'], {}) 
           }
+        }
         )
       }
     }
@@ -164,3 +168,4 @@ export class CreateServerComponent implements OnInit, AfterViewInit {
       htmlCollection[0].remove()
   }
 }
+*/

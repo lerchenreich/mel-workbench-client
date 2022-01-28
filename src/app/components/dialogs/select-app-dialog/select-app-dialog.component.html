@@ -1,0 +1,36 @@
+<div class="modal-header" >
+  <h4 class="modal-title" style="text-align: center;">{{Title | translate }}</h4>
+</div> 
+<div class="modal-body" style="text-align: center;">
+  <div [style.opacity]="urlErrorText.length" >{{dlgErrorText}}</div>
+    <br>
+    <mat-form-field style="display: inherit;" [disabled]="config.hasEndpoint && connected">
+      <mat-label>{{ LabelEnterUrl | translate }}</mat-label>
+      <input matInput type="text" [(ngModel)]="url"  (change)="onUrlChanged()">
+      <mat-hint>{{ HintUrl | translate }}</mat-hint>
+      <span class="melError" [style.margin-bottom]="'1em'"  [style.opacity]="urlErrorText.length">{{urlErrorText | translate}}</span>
+    </mat-form-field>
+  
+    <br>
+     
+    <mat-form-field style="display: inherit;"  [disabled]="!(config.hasEndpoint && connected)">
+      <mat-label>{{ SelectAppLabel | translate }}</mat-label>
+      <mat-select [(ngModel)]="selectedApp.key" (ngModelChange)="onSelectionChanged()" >
+          <mat-option *ngFor="let option of selectOptions" [value]="option.key">{{option.value}}&nbsp;({{option.key}})</mat-option>
+          <mat-option [value]="createAppCommand">{{ CreateAppOption | translate}}</mat-option>
+      </mat-select>
+      <mat-hint>{{ SelectAppHint | translate }}</mat-hint>
+    </mat-form-field>
+ 
+</div>  
+<div class="modal-footer">
+  <button mat-raised-button color="info" (click)="connect()">{{'App.Dialog.SelectApp.Command.Connect'|translate}}</button>
+  <button mat-raised-button color="warn" (click)="dismissClicked()">{{'Command.Cancel'|translate}}</button>
+  <button mat-raised-button color="primary" (click)="okClicked()" [disabled]="disableOk">{{'Command.Ok'|translate}}</button>
+</div>
+
+
+
+ 
+
+

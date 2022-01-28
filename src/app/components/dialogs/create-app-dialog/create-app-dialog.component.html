@@ -1,0 +1,32 @@
+<div class="modal-header" >
+  <h4 class="modal-title" style="text-align: center;">{{transPrefix+'Title' | translate }}</h4>
+</div> 
+<div class="modal-body" style="text-align: center;">
+  <mat-tab-group>
+    <mat-tab label="Application"> 
+      <div class="row">
+        <div class="col-lg mel-card-field"><mel-card-field  [context]="context('AppCode')"> </mel-card-field>  </div>
+        <div class="col-lg mel-card-field"><mel-card-field [context]="context('AppName')"> </mel-card-field>   </div>          
+        <div class="col-lg mel-card-field"><mel-card-field [context]="context('Version')" > </mel-card-field>   </div>  
+      </div>    
+      <div class="row">
+        <div class="col-lg mel-card-field"><mel-card-field [context]="context('CompanyName')"> </mel-card-field>  </div>
+        <div class="col-lg mel-card-field"><mel-card-field [context]="context('CompanyDbName')"> </mel-card-field>   </div>          
+        <div class="col-lg mel-card-field"><mel-card-field [context]="context('RenameCompanyDatabase')" > </mel-card-field>   </div>  
+      </div>      
+
+    </mat-tab>
+    <mat-tab label="Serverproject"> 
+      
+    </mat-tab>
+    <mat-tab label="Clientproject"> 
+      
+    </mat-tab>
+  </mat-tab-group>
+</div>
+<div class="modal-footer">
+  <button mat-raised-button color="warn" (click)="dismissClicked()" >{{'Command.Cancel'|translate}}</button>
+  <button mat-raised-button color="primary" (click)="okClicked()" [disabled]="!isValid">{{'Command.Ok'|translate}}</button>
+</div>
+
+

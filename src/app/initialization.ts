@@ -1,9 +1,9 @@
 import { TranslateService } from "@ngx-translate/core"
-import { RecentApps, RecentConnections, IconService, InitializationService } from "mel-client";
-import { appEntities } from "../models/entities";
+import { IconService, InitializationService, RecentWorkbenchApps } from "mel-client";
+import { appEntities } from "./models/entities";
 
 
-export function initializationFactory( initService: InitializationService<RecentApps|RecentConnections>, translate: TranslateService, iconService : IconService) {
+export function initializationFactory( initService: InitializationService<RecentWorkbenchApps>, translate: TranslateService, iconService : IconService) {
   return (): Promise<any> => {
     //localStorage.clear()
     iconService.registerIcons()

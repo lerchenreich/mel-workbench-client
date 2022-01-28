@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SelectAppDialogComponent } from './selectApp-dialog.component';
+import { SelectAppDialogComponent } from './select-app-dialog.component';
 
 describe('SelectAppDialogComponent', () => {
   let component: SelectAppDialogComponent;

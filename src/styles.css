@@ -57,6 +57,9 @@ label.mat-checkbox-layout {
   margin-left: 5px;
 }
 
+.mel-card-field {
+  text-align: left;
+}
 .melError {
   color : red;
   font-size: smaller;
@@ -70,5 +73,4 @@ label.mat-checkbox-layout {
   color : rgba(98, 98, 255, 0.75);
   font-size: smaller;
   opacity: 0;
-  display: inline-block;
 }

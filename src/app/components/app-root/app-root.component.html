@@ -51,7 +51,7 @@
   let-assistObs="assistObs"
   >     
   <mel-list-input  
-    [subType]="subType" 
+    [subType]="subtype" 
     [value]="value" 
     [lookupFor]="lookupFor"
     [assistObs]="assistObs" 
@@ -80,7 +80,7 @@
   let-editable="editable"  
   let-value="value" 
   let-changedObs="changedObs"> 
-  <mel-card-checkbox 
+  <mel-card-checkbox
     [caption]="caption"
     [editable]="editable"
     [value]="value"
@@ -90,6 +90,7 @@
 
 <ng-template cardInput 
   let-caption="caption" 
+  let-hint="hint"
   let-subtype="subType" 
   let-editable="editable"
   let-value="value" 
@@ -97,10 +98,11 @@
   let-assistObs="assistObs"
   let-changedObs="changedObs"
   > 
-  <mel-card-input 
+  <mel-card-input
     [caption]="caption"
+    [hint]="hint"
     [placeholder]="caption" 
-    [subType]="subType" 
+    [subType]="subtype" 
     [editable]="editable"
     [value]="value"
     [lookupFor]="lookupFor"
@@ -108,14 +110,19 @@
     [changedObs]="changedObs" 
   >
   </mel-card-input>
-  </ng-template>     
+</ng-template>     
 
+<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="hintTrigger" [cdkConnectedOverlayOpen]="showHint">
+  <div style="width:fit-content;border:solid;border-radius: 1px #ccc;background: #000;color:#fff; text-align: center;padding: 5px;margin:0">
+ this is a hint 
+  </div>
+</ng-template>
   <!-- App -->
 
 <mat-toolbar role="heading" color="primary">
   <span >{{title}}</span>
   <span class="fill-remaining-space"> </span>
-  <app-toolbar></app-toolbar>
+  <app-toolbar (menuCommand)="menuCommand($event)"></app-toolbar>
 </mat-toolbar>
 <app-alert></app-alert>
 <router-outlet></router-outlet>

@@ -1,11 +1,153 @@
 {
   "App" : {
+    "Title" : "Mel-Anwendungsenwicklung",
     "Entity" : {
-      "DailyGroundValue" :{
-        "_captionSingular" : "Bodentemperatur",
-        "_captionPlural" : "Bodentemperaturen"
+      "CreateAppDlgData" : {
+        "CaptionSingular" : "Neue Anwendung erstellen",
+        "CaptionPlural" : "Neue Anwendung erstellen",
+        "Caption" : {
+          "AppCode" : "Code",
+          "AppName" : "Name",
+          "Version" : "Version",
+          "CompanyName" : "Mandantenname",
+          "CompanyDbName" : "Datenbankname",
+          "DropExistingAppDatabase" : "App-Datenbank löschen",
+          "RenameCompanyDatabase" : "Mandanten-Datenbank umbenennen",
+          "SpKeywords" : "Schlüsselbegriffe",
+          "SpAuthor" : "Author",
+          "SpLicense" : "Lizenz",
+          "SpServerPort" : "Server-Port",
+          "SpDbConfigHost" : "Host",
+          "SpDbConfigPort" : "Port",
+          "SpDbConfigUsername" : "Benutzername",
+          "SpDbConfigPassword" : "Passwort",
+          "SpDbConfigDatabase" : "Datenbank",
+          "SpDbConfigSsl" : "SSL",
+          "SpDbConfigTimeout" : "Timeout [ms]",
+          "SpDatabaseType" : "Datenbanktyp"
+        },
+        "Hint"  : {
+          "AppCode" : "Eindeutiger Code der Anwendung",
+          "AppName" : "Sichtbarer Anwendungsname",
+          "Version" : "Version",
+          "CompanyName" : "1. Mandantenname",
+          "CompanyDbName" : "Datenbankname der zugrunde liegenden Datenbank",
+          "DropExistingAppDatabase" : "Gegebenenfalls existierende App-Datenbank löschen",
+          "RenameCompanyDatabase" : "Mandanten-Datenbank umbennen nach [AppCode]_datenbankname",
+          "SpKeywords" : "Serverprojekt Package-Schlüsselbegriffe",
+          "SpAuthor" : "Serverprojekt Package-Author",
+          "SpLicense" : "Serverprojekt Package-Lizenz",
+          "SpServerPort" : "Serverprojekt Port auf dem der Server hört",
+          "SpDbConfigHost" : "Serverprojekt Datenbank-Host",
+          "SpDbConfigPort" : "Serverprojekt Datenbank-Port",
+          "SpDbConfigUsername" : "Serverprojekt Datenbank-Benutzername",
+          "SpDbConfigPassword" : "Serverprojekt Datenbank-Passwort",
+          "SpDbConfigDatabase" : "Serverprojekt Datenbank-Name",
+          "SpDbConfigSsl" : "Serverprojekt Datenbank-SSL",
+          "SpDbConfigTimeout" : "Serverprojekt Datenbank-Timeout",
+          "SpDatabaseType" : "Serverprojekt Datenbank-Typ [mysql, postgres, mssql]"
+        }
       }
     },
-    "Title" : "Anwendungstitel"
+    "Menu" : {
+      "AllApps" : "Anwendungen...",
+      "CreateApp" :"Anwendung erstellen",
+      "CreateServer" : "Serverprojekt erstellen",
+      "CreateClient" : "Clientprojekt erstellen",
+      "Setup" : "Einrichtung"
+    },
+    "Function" : {
+      "CreateApp" : {
+        "Title"   : "Anwendung erstellen",
+        "Success" : "Anwendung '{{AppName}}' erfolgreich erstellt. Klicken Sie auf 'Ja', um den Projektcode des Servers herunterzuladen",
+        "Failed" : "Anwendung '{{AppName}}' konnte nicht erstellt werden!"
+      }
+    },
+
+    "GettingStarted_copied from mel-client" : {
+      "Title" : "App auswählen",
+      "States" : {
+        "MasterService" : {
+          "Error" : "Keine Verbindung zum Dev-Service ",
+          "Running" : "Dev-Service läuft"
+        },
+        "AppService" : {
+          "Error" : "Keine Verbindung zum App-Service",
+          "Running" : "App-Service läuft"
+        }
+      },
+      "Actions" : {
+        "StartMasterService" : "Starten Sie den Dev-Service!",
+        "StartAppService" : "Starten Sie den App-Service",
+        "CheckMasterService" : "Prüfen Sie Host [{{host}}] und Port [{{port}}] des Dev-Services!",
+        "CheckAppService" : "Prüfen Sie den App-Service-Endpoint [{{restAppEndpoint}}]!"
+       },
+       "Options" : {
+         "Create" : "Neue App"
+       },
+       "Field" : {
+         "Select" : {
+           "Label" : "Wählen Sie",
+           "Hint"  : "Wählen Sie eine App aus oder generieren eine neue App"
+         }
+       }
+    },
+  
+    "CreateServer_copied from mel-client" : {
+      "Title" : "REST-Server generieren",
+      "WaitFor" : "wird generiert...",
+      "Success" : "Server wurde generiert",
+      "Failed" : "Server konnte nicht generiert werden",
+      "SelectFolder" : "Zielordner auswählen",
+      "Field" : {
+        "Name" : {
+          "Caption" : "Server-Name",
+          "Hint" : "Paketname des REST-Servers"
+        },
+        "Version" : {
+          "Caption" : "Version",
+          "Hint" : "Format: major.minor.build"
+        },
+        "Description" : {
+          "Caption" : "Beschreibung",
+          "Hint" : ""
+        },
+        "TargetDir" : {
+          "Caption" : "Zielordner",
+          "Hint" : "Wählen Sie den Ordner aus, in das das Projekt generiert werden soll"
+        }
+      }
+    },
+  
+    "Dialog" : {
+      "SelectApp" : {
+        "Title" : "Mit einer Anwendung verbinden",
+        "Url" : {
+          "Label" : "Entwicklungsserver-Url",
+          "Hint" : "Geben Sie die IP-Adresse oder den erreichbaren Host des Enwicklungsserver ein",
+          "Invalid" : "Die Url is ungültig"
+        },
+        "SelectApp" : {
+          "Label" : "App-Code auswählen",
+          "Hint"  : "Wählen Sie hier den App-Code aus den zur Verfügung stehenden Apps aus oder 'App generieren'"
+        },
+        "NoServer" : "Keine Verbindung zum Server",
+        "Command"  : {
+          "Connect" : "Verbinden",
+          "CreateApp" : "App generieren"
+        } 
+      },
+      "CreateApp" : {
+        "Title" : "Neue Anwendung erstellen",
+        "WaitFor" : "Datenbank '{{appCode}}' wird erstellt",
+        "Success" : "Datenbank '{{appCode}}' wurde erstellt",
+        "Failed"  : "Datanbank '{{appCode}}' konnte nicht erstellt werden",
+  
+        "NoDbAvailable" : "Keine Anwenungsdatenbank für eine NEUE Anwendung verfügbar!"
+      },
+      "AppTables" : {
+        "Title" : "Anwendungs-Tabellen"
+      }
+    }
   }
 }

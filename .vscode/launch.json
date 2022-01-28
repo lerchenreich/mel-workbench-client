@@ -5,7 +5,7 @@
         "name": "Launch Chrome",
         "request": "launch",
         "type": "pwa-chrome",
-        "preLaunchTask": "Renderer.BuildAndServe",
+        "preLaunchTask": "Renderer.Serve",
         "url": "http://localhost:3041",
         "webRoot": "${workspaceFolder}",
         "sourceMaps": true,  
@@ -28,9 +28,9 @@
         }
     },
     {
-        "name": "Renderer",
+        "name": "Serve Renderer",
         "type": "chrome",
-        "preLaunchTask": "Renderer.BuildAndServe",
+        "preLaunchTask": "Renderer.Serve",
         "request": "attach",
         "port": 9223,
         "url": "http://localhost:3041",
@@ -45,7 +45,7 @@
         "name": "Electron: All",
         "configurations": [
             "Main",
-            "Renderer"
+            "Serve Renderer"
         ]
     }
   ]    

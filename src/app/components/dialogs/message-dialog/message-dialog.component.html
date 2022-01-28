@@ -1,0 +1,48 @@
+
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-title" [translate]="title" ></h4>
+</div>
+<div class="modal-body">
+  <span>{{message | translate:context}}</span>
+  <br>
+  <div *ngIf="reportItems">
+    <table mat-table [dataSource]="reportItems">
+      <ng-container>
+        <div *ngFor='let fieldName of reportFieldNames;'>
+          <ng-container matColumnDef="{{fieldName}}"> 
+            <td mat-cell *matCellDef="let row;">
+              <img *ngIf="fieldName=='result'; else msg" width="16em" height="16em" [src]="resultImg(row[fieldName])" >
+              <ng-template #msg>{{row[fieldName]}}</ng-template>
+            </td>  
+          </ng-container>
+        </div>
+        <tr mat-row *matRowDef="let row; columns : reportFieldNames"></tr>
+      </ng-container>
+    </table>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <div *ngIf="showNegativeButton">
+    <button #btnNegative mat-raised-button (click)="this.close(Negative)">
+      {{keyPrefix+negativeKey | translate}}
+    </button>
+  </div>
+  <div *ngIf="showRetryButton">
+    <button #btnRetry mat-raised-button (click)="this.close(Retry)">
+      {{keyPrefix+retryKey | translate}}
+    </button>
+  </div>
+  <div *ngIf="showIgnoreButton">
+    <button #btnIgnore mat-raised-button (click)="this.close(Ignore)">
+      {{keyPrefix+ignoreKey | translate}}
+    </button>
+  </div>
+  <div *ngIf="showPositiveButton">
+    <button #btnPositive mat-raised-button (click)="this.close(Positive)">
+    {{keyPrefix+positiveKey | translate}}
+    </button>
+  </div>
+</div>
+
+
