@@ -1,13 +1,13 @@
 {
     "version": "0.2.0",
     "configurations": [
-       {
-        "name": "Launch Chrome",
-        "request": "launch",
+      {
+        "name": "Serve and Launch Chrome",
         "type": "pwa-chrome",
-        "preLaunchTask": "Renderer.Serve",
-        "url": "http://localhost:3041",
-        "webRoot": "${workspaceFolder}",
+        "request": "launch",
+        "preLaunchTask": "npm: ngServe",
+        "url": "http://localhost:3041/#",
+        "webRoot": "${workspaceFolder}", 
         "sourceMaps": true,  
         "timeout": 60000
       },
@@ -29,10 +29,10 @@
     },
     {
         "name": "Serve Renderer",
-        "type": "chrome",
-        "preLaunchTask": "Renderer.Serve",
+        "type": "pwa-chrome",
         "request": "attach",
         "port": 9223,
+        "preLaunchTask": "Renderer.Serve",
         "url": "http://localhost:3041",
         "trace": true,
         "sourceMaps": true,  

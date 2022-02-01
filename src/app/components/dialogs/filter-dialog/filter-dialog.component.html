@@ -1,0 +1,42 @@
+<div class="modal-header" >
+  <h4 class="modal-title" style="text-align: center;">{{caption}}-Filter</h4>
+</div> 
+<div class="modal-body" style="text-align: center;">
+  <div *ngIf="filterElements"  class="filterDialog">
+    <div *ngFor="let filterElement of filterElements.controls; index as i" >
+       <table><tr>
+          <td>
+          <mat-form-field >
+              <mat-select [formControl]="fieldNameControl(filterElement)" (ngModelChange)="onFieldNameChange($event,i)">
+                  <mat-option *ngFor='let fieldName of fieldNames;' [value]="fieldName">{{fieldName}}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </td>
+          <td>
+            <mat-form-field class="filter-condition">
+              <input matInput [formControl]="fieldConditionControl(filterElement)" (change)="onConditionChange($event,i)" >
+              <mat-error class="error-message" *ngIf="(filterElement.invalid)">{{validationErrors(i)}}
+              </mat-error>
+            </mat-form-field>
+          </td>
+          <td class="filter-clear-button"> 
+            <button mat-icon-button class="small-icon-button"  tabindex="-1" (click)="clearButtonClicked(i)" [disabled]="fieldNameControl(filterElement).disabled">
+              <mat-icon>clear</mat-icon>
+            </button></td>
+        </tr></table>
+    </div> 
+  </div>
+</div> 
+
+<div class="modal-footer">
+  <button mat-icon-button (click)="newFilterelement()" matTooltip="{{'Dialog.Filter.Tooltip.Add'|translate}}" tabindex="-1" 
+    [disabled]="filterElements.status==='INVALID'"> 
+    <mat-icon>add</mat-icon>
+  </button>
+  <button mat-button (click)="dismissClicked()" matTooltip="{{'Dialog.Filter.Tooltip.Cancel'|translate}}" 
+    tabindex="-1" >{{'Dialog.Action.Cancel'|translate}}</button>
+  <button mat-button (click)="okClicked()"  matTooltip="{{'Dialog.Filter.Tooltip.Ok'|translate}}" 
+    [disabled]="filterElements.status==='INVALID'" >{{'Dialog.Action.Apply'|translate}}</button>
+</div>
+
+

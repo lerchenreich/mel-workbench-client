@@ -5,10 +5,11 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { isEmpty } from 'lodash'
 import { StringString } from 'mel-common';
 
-import { ClientConfig, CLIENT_CONFIG, AlertService, MelSetup, AppConnection, PageTypes, WorkbenchApp } from 'mel-client';
+import { ClientConfig, CLIENT_CONFIG, AlertService, MelSetup, AppConnection } from 'mel-client';
 import { WorkbenchService } from 'src/app/services/workbench-service';
-import { MelModal } from 'mel-client';
+
 import { BsModalRef } from 'ngx-bootstrap/modal';
+import { MelModal } from '../mel-modal';
 
 export const createAppCommand = "__createApp__"
 
@@ -58,8 +59,9 @@ export class SelectAppDialogComponent extends MelModal<any, AppConnection> imple
  
   selectOptions : StringString[] = []
   
-  override prepareReturnValue(): AppConnection {
-    return  (this.selectedApp.key === createAppCommand)? { url :'', code : createAppCommand, name : ''} 
+  get returnValue(): AppConnection {
+    return  (this.selectedApp.key === createAppCommand)? 
+        { url :'', code : createAppCommand, name : '' } 
       : { url : this.url, code : this.selectedApp.key, name : this.selectedApp.value } 
   }
   private setSelectOptions(apps : MelSetup[]){
@@ -67,13 +69,9 @@ export class SelectAppDialogComponent extends MelModal<any, AppConnection> imple
       .filter(app => !isEmpty(app.AppCode) && !isEmpty(app.AppName) && !isEmpty(app.AppDbName) )
       .map(app => { return { key : app.AppCode as string, value : app.AppName as string} }) 
   }
-  //private get melSetups() : MelSetup[] { return this._melSetups }
 
   get disableOk() : boolean { return (this.dlgErrorText.length + this.urlErrorText.length) > 0}
   
-  initDialogData(data: any): void {    
-  }
-
   ngOnInit() {
     if (this.config.hasEndpoint){
       this.connect()

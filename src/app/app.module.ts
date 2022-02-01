@@ -21,7 +21,7 @@ import { NgxSliderModule }            from '@angular-slider/ngx-slider';
 
 import { MessageDialogComponent }     from './components/dialogs/message-dialog/message-dialog.component';
 
-import { MaterialModule } from 'mel-client'
+import { MaterialModule } from './material-module'
 import { AppRoutingModule } from './app-routing.module';
 
 // Services
@@ -54,6 +54,8 @@ import { WORKBENCH_CONFIG }           from './client.configs';
 
 // services
 import { WorkbenchService }           from './services/workbench-service';
+import { ModalStyleDirective } from './components/directives';
+import { ModalWaitComponent } from './components/dialogs/modal-wait/modal-wait.component';
 
 // AoT requires an exported function for factories
 export function createTranslateLoader(http: HttpClient) {
@@ -75,8 +77,10 @@ export function createTranslateLoader(http: HttpClient) {
     SelectAppDialogComponent, 
     AppTablesDialogComponent,
     CreateAppDialogComponent,
-
-    MessageDialogComponent
+//--> mel-client
+    MessageDialogComponent,
+    ModalWaitComponent,
+    ModalStyleDirective
   ],
   imports: [ 
     // wie mel-client

@@ -1,6 +1,7 @@
 //import { ObjectLiteral } from "../../../core/types";
 
 import { ObjectLiteral } from "mel-client"
+import { EntityLiteral } from "mel-common"
 
 export enum MsgButton { Yes = 1, No = 2, Ok = 4, Cancel = 8, Ignore = 16, Retry = 32, GotIt = 64 }
 export const msgButtonTranslations = new Map<MsgButton, string> ([
@@ -32,7 +33,7 @@ export declare type MsgReportItem = {
 }
 export interface MsgDialogData {
   title?   : string
-  message? : string
+  message : string
   context? : ObjectLiteral
   reportItems? : MsgReportItem[]
   buttons? : MsgDialogButton

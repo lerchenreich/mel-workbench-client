@@ -1,6 +1,6 @@
 
 <div class="modal-header">
-  <h4 class="modal-title" id="modal-title" [translate]="title" ></h4>
+  <h4 class="modal-title" id="modal-title"  >{{ title | translate:context}}</h4>
 </div>
 <div class="modal-body">
   <span>{{message | translate:context}}</span>

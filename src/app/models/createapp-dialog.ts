@@ -1,10 +1,10 @@
-import { Field, Table} from 'mel-client';
+import { Entity, Field, Table} from 'mel-client';
 
-import { EntityLiteral, FieldTypes, greaterOrEqualThan, matchIp4Address, 
+import { FieldTypes, greaterOrEqualThan, matchIp4Address, 
          matchVersion, notBlank, notZero } from 'mel-common';
 
 @Table({ temporary : true})
-export class CreateAppDlgData extends EntityLiteral{
+export class CreateAppDlgData extends Entity{
   @Field({type : FieldTypes.Code, validators:[notBlank]})           
   AppCode : string = ""
   @Field({type : FieldTypes.String })                               

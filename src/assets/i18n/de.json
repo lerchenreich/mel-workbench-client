@@ -1,3 +1,4 @@
+
 {
   "App" : {
     "Title" : "Mel-Anwendungsenwicklung",
@@ -49,6 +50,9 @@
         }
       }
     },
+    "Message" : {
+      "Error" : "Fehler !"
+    },
     "Menu" : {
       "AllApps" : "Anwendungen...",
       "CreateApp" :"Anwendung erstellen",
@@ -60,7 +64,8 @@
       "CreateApp" : {
         "Title"   : "Anwendung erstellen",
         "Success" : "Anwendung '{{AppName}}' erfolgreich erstellt. Klicken Sie auf 'Ja', um den Projektcode des Servers herunterzuladen",
-        "Failed" : "Anwendung '{{AppName}}' konnte nicht erstellt werden!"
+        "Failed" : "Anwendung '{{AppName}}' konnte nicht erstellt werden!",
+        "Running" : "Anwendung wird erstellt"
       }
     },
 

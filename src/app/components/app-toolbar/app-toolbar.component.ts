@@ -6,7 +6,10 @@ import { MelSetup,AlertService, AppService, AppConnection, MelRecents } from "me
 
 export declare type MenuCommand = { name : MenuCommands, param? : any}
 export enum MenuCommands {
-  ChangeApp = 'changeapp'
+  ChangeApp = 'changeapp',
+  CreateApp = 'createapp',
+  CreateServer = 'createserver',
+  CreateClient = 'createclient'
 }
 @Component({
   selector: 'app-toolbar',
@@ -70,5 +73,14 @@ export class AppToolbarComponent implements OnInit {
       name : MenuCommands.ChangeApp, 
       param : this.appConnections.find(con => con.code ==  appCode)
     })
+  }
+  createApp(){
+    this.menuCommand.emit({name : MenuCommands.CreateApp})
+  }
+  createServer(){
+    this.menuCommand.emit({name : MenuCommands.CreateServer})
+  }
+  createClient(){
+    this.menuCommand.emit({name : MenuCommands.CreateClient})
   }
 }

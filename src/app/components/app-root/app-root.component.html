@@ -61,13 +61,15 @@
 
 <ng-template cardEnum 
   let-caption="caption" 
+  let-hint="hint"
   let-editable="editable"
   let-value="value" 
   let-options="meta" 
   let-changedObs="changedObs" 
   >
   <mel-card-select 
-    [caption]="caption"  
+    [caption]="caption" 
+    [hint]="hint" 
     [editable]="editable"
     [value]="value" 
     [options]="options"
@@ -77,11 +79,13 @@
 
 <ng-template cardBoolean 
   let-caption="caption" 
+  let-hint="hint"
   let-editable="editable"  
   let-value="value" 
   let-changedObs="changedObs"> 
   <mel-card-checkbox
     [caption]="caption"
+    [hint]="hint"
     [editable]="editable"
     [value]="value"
     [changedObs]="changedObs" 
@@ -112,12 +116,7 @@
   </mel-card-input>
 </ng-template>     
 
-<ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="hintTrigger" [cdkConnectedOverlayOpen]="showHint">
-  <div style="width:fit-content;border:solid;border-radius: 1px #ccc;background: #000;color:#fff; text-align: center;padding: 5px;margin:0">
- this is a hint 
-  </div>
-</ng-template>
-  <!-- App -->
+<!-- App -->
 
 <mat-toolbar role="heading" color="primary">
   <span >{{title}}</span>

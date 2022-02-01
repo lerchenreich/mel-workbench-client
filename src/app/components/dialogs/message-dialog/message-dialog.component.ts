@@ -3,9 +3,10 @@ import { MatButton } from '@angular/material/button';
 
 import { TranslateService } from '@ngx-translate/core';
 import { BsModalRef } from 'ngx-bootstrap/modal';
-import { MelModal, ObjectLiteral } from 'mel-client' //../../../core/types';
+import { ObjectLiteral } from 'mel-client' //../../../core/types';
 import { MsgReportItem, MsgButton, MsgDialogButton, 
   MsgDialogData, MsgResult, msgButtonTranslations } from './types';
+import { MelModal } from '../mel-modal';
 @Component({
   selector: 'app-message-dialog',
   templateUrl: './message-dialog.component.html',
@@ -20,23 +21,27 @@ export class MessageDialogComponent extends MelModal<MsgDialogData, MsgResult> i
   constructor(modalRef : BsModalRef, public translate : TranslateService) { 
     super(modalRef)
   } 
-    // MsgDialogData implementation
-    title : string = 'Message'
-    message : string = ''
-    context? : ObjectLiteral 
-    reportItems? : MsgReportItem[]
-    buttons? : MsgDialogButton   
-    default? : MsgResult
+  // MsgDialogData implementation
+  title : string = 'Message'
+  message : string = ''
+  context? : ObjectLiteral 
+  reportItems? : MsgReportItem[]
+  buttons? : MsgDialogButton   
+  default? : MsgResult
+
   // MelModal implementation
-  resultValue? : MsgResult 
+  resultValue? : MsgResult
+  get returnValue(): MsgResult | undefined {
+    return this.resultValue    
+  }
  
-  initDialogData(data: MsgDialogData): void {
+  override set dlgData(data: MsgDialogData) {
     if (data.title) this.title = data.title
     this.message = this.message
     if (data.context) this.context = data.context
     if (data.reportItems) this.reportItems = data.reportItems
-    this.buttons = data.buttons || MsgDialogButton.OkCancel 
-    this.default = data.default || MsgResult.Negative
+    this.buttons = data.buttons || MsgDialogButton.Ok
+    this.default = data.default || MsgResult.Positive
   }
   readonly Positive = MsgResult.Positive
   readonly Negative = MsgResult.Negative
@@ -102,9 +107,7 @@ export class MessageDialogComponent extends MelModal<MsgDialogData, MsgResult> i
   resultImg(result : boolean) : string {
     return `assets/images/${(result?'mel_ok':'mel_notok')}.png`  
   }
-  protected override prepareReturnValue(): MsgResult | undefined {
-    return this.resultValue    
-  }
+  
   close(result : MsgResult){
     this.resultValue = result
     this.okClicked()

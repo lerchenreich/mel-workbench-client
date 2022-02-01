@@ -3,10 +3,10 @@
 
 <mat-menu #appMenu="matMenu"> 
   <ng-template matMenuContent let-display="display" let-data="data">
-    <a mat-menu-item routerLink="/create-server" >{{CreateServer | translate }}</a>   
-    <a mat-menu-item routerLink="/create-client" >{{CreateClient | translate }}</a>   
+    <a mat-menu-item (click)="createServer()"  >{{CreateServer | translate }}</a>   
+    <a mat-menu-item (click)="createClient()"  >{{CreateClient | translate }}</a>   
     <a mat-menu-item [style.display]="'inline'"  routerLink="/setup-card" >{{RunSetup | translate }}</a>   
-    <a mat-menu-item routerLink="/create-app" >{{CreateApp | translate }}</a>   
+    <a mat-menu-item (click)="createApp()" >{{CreateApp | translate }}</a>   
    <button mat-menu-item  [matMenuTriggerFor]="allApps"  [matMenuTriggerData]="data" >{{AllApps | translate }}</button>  
     <!--button mat-menu-item [style.display]="display.changeCompany"  [matMenuTriggerFor]="changeCompany" [matMenuTriggerData]="data" >{{'Menu.ChangeCompany' | translate }}</button-->  
   </ng-template>
