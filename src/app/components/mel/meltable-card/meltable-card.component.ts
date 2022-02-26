@@ -3,11 +3,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
+import { NgbModal as ModalService } from '@ng-bootstrap/ng-bootstrap';
 import { isEmpty } from 'lodash'
 
-import { MelTable, Card, MelTableService, AlertService } from 'mel-client';
-import { BsModalService } from 'ngx-bootstrap/modal';
-
+import { MelTable, CardDbPage,  MelTableService, AlertService, EntityUI } from 'mel-client';
 
 @Component({
   selector: 'app-meltable-card',
@@ -16,19 +15,18 @@ import { BsModalService } from 'ngx-bootstrap/modal';
   providers: [MelTableService]
 })
 @UntilDestroy()
-export class MelTableCardComponent  extends Card<MelTable> implements OnInit {
+export class MelTableCardComponent  extends CardDbPage<MelTable> implements OnInit {
   constructor(private route: ActivatedRoute,
               router: Router, 
               translate : TranslateService,
               melTableService : MelTableService,  
-              modal : BsModalService,
+              modal : ModalService,
               snackBar : MatSnackBar, alertService : AlertService ) { 
-    super( router, translate, melTableService, modal, snackBar, alertService)
+    super( router, melTableService,  translate, modal, snackBar, alertService)
   }
   get sublistLocked() : boolean { return !isEmpty(this.rec?.Name)}
-  
+  public get ui() : EntityUI<MelTable> { return this.entityUI }
   ngOnInit() : void {
-    
     this.accessRights = 'md'
     const tablename = this.route.snapshot.paramMap.get('name')
     if (tablename){

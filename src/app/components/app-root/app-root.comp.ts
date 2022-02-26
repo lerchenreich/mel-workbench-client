@@ -3,36 +3,36 @@ import { Router } from "@angular/router"
 import { TranslateService } from "@ngx-translate/core"
 import { AlertService, TemplateService, AppConnection,  
          ClientRootComponent, 
-         MelRecents, RecentWorkbenchApp } from "mel-client"
+         MelRecents, RecentWorkbenchApp,
+         openModalDlg, 
+         MsgDlgButton,
+         animatedDialog} from "mel-client"
 import { MelDatabaseTypes, Version } from "mel-common"
 import { CreateAppOptions } from "mel-workbench-api"
-import { BsModalService } from "ngx-bootstrap/modal"
+//import { BsModalService as ModalService } from "ngx-bootstrap/modal"
+import { NgbModal as ModalService, NgbActiveModal as ModalRef}  from '@ng-bootstrap/ng-bootstrap';
 
-import { CreateAppDlgData } from "src/app/models/createapp-dialog"
+import { CreateAppDlgData } from "src/app/components/dialogs/create-app/data"
 import { WorkbenchService } from "src/app/services/workbench-service"
 import { MenuCommand, MenuCommands } from "../app-toolbar/app-toolbar.component"
-import { CreateAppDialogComponent } from "../dialogs/create-app-dialog/create-app-dialog.component"
+import { CreateAppDialogComponent } from "../dialogs/create-app/create-app-comp"
 
 
 // --> mel-client
-import { MessageBox } from "../dialogs/message-dialog/messagebox"
-import { MsgResult, MsgDialogButton} from "../dialogs/message-dialog/types"
-import { createAppCommand, SelectAppDialogComponent } from "../dialogs/select-app-dialog/select-app-dialog.component"
-import { openEntityDialog } from "../dialogs/mel-modal-entity"
-import { waitDialog } from "../dialogs/modal-wait/modal-wait.component"
-import { openDialog } from "../dialogs/mel-modal"
+import { MessageBox, MsgResult } from "mel-client"
+import { createAppCommand, SelectAppComponent } from "../dialogs/select-app/select-app-comp" 
 
 function nop(reason : any) {} 
 @Component({
   selector: 'app-root',
-  templateUrl: './app-root.component.html',
-  styleUrls: ['./app-root.component.scss']
+  templateUrl: './app-root.comp.html',
+  styleUrls: ['./app-root.comp.scss']
 })
 export class AppRootComponent extends ClientRootComponent implements AfterContentInit {
   readonly createAppPrefix = "App.Function.CreateApp."
 
   constructor(protected router: Router,
-              protected modal : BsModalService,      
+              protected modal : ModalService,      
               public    translate : TranslateService,        
               alertService : AlertService,
               private workbenchService : WorkbenchService,
@@ -45,8 +45,8 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
 
   ngAfterContentInit(){
     if (!this.workbenchService.hasEndpoint){
-      openDialog<SelectAppDialogComponent, AppConnection>(this.modal, SelectAppDialogComponent)
-      .then( (recentApp : AppConnection) => {     
+      openModalDlg<SelectAppComponent, any, AppConnection>(this.modal, SelectAppComponent, null)
+      .then( recentApp  => {     
         if ( recentApp.code === createAppCommand )
           this.createApp()
         else 
@@ -72,78 +72,83 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
   }
 
   private createApp() {
+    
     this.prepareCreateAppDlgData()
-    .then( dlgData => {
-      openEntityDialog<CreateAppDialogComponent, CreateAppDlgData, CreateAppDlgData>(
+    .then( (dlgData) => {
+      openModalDlg<CreateAppDialogComponent, any, CreateAppDlgData>(
         this.modal, 
         CreateAppDialogComponent, 
         dlgData 
       )
-      .then( dlgData => {
+      .then( (dlgData) => {
+        const vData = dlgData as Required<CreateAppDlgData>
         var createOptions : CreateAppOptions = {
-          appCode : dlgData.AppCode,
-          appName : dlgData.AppName,
-          version : new Version(dlgData.Version),
+          appCode : vData.AppCode,
+          appName : vData.AppName,
+          version : new Version(vData.Version),
           company : {
-            name    : dlgData.CompanyName,
-            dbName  : dlgData.CompanyDbName
+            name    : vData.CompanyName,
+            dbName  : vData.CompanyDbName
           },
-          dropExistingAppDatabase : dlgData.DropExistingAppDatabase,
-          renameCompanyDatabase   : dlgData.RenameCompanyDatabase,
+          dropExistingAppDatabase : vData.DropExistingAppDatabase,
+          renameCompanyDatabase   : false, // dlgData.RenameCompanyDatabase,
           createServerProjectOptions : {
-            name        : dlgData.AppCode+'-server',
-            version     : dlgData.Version,
-            description : `Express-Server for application ${dlgData.AppName}`, 
-            keywords    : dlgData.SpKeywords?.split(',') || [],
-            author      : dlgData.SpAuthor || '',
-            license     : dlgData.SpLicense,
-            serverPort  : dlgData.SpServerPort,
+            name        : vData.AppCode+'-server',
+            version     : vData.Version,
+            description : `Express-Server for application ${vData.AppName}`, 
+            keywords    : vData.SpKeywords?.split(',') || [],
+            author      : vData.SpAuthor || '',
+            license     : vData.SpLicense,
+            serverPort  : vData.SpServerPort,
             dbConfig: {
-              host      : dlgData.SpDbConfigHost,
-              port      : dlgData.SpDbConfigPort,
-              username  : dlgData.SpDbConfigUsername,
-              password  : dlgData.SpDbConfigPassword,
-              database  : dlgData.SpDbConfigDatabase,
-              ssl       : dlgData.SpDbConfigSsl,
-              timeout   : dlgData.SpDbConfigTimeout  
+              host      : vData.SpDbConfigHost,
+              port      : vData.SpDbConfigPort,
+              username  : vData.SpDbConfigUsername,
+              password  : vData.SpDbConfigPassword,
+              database  : vData.SpDbConfigDatabase,
+              ssl       : vData.SpDbConfigSsl,
+              timeout   : vData.SpDbConfigTimeout  
             },
-            databaseType :dlgData.SpDatabaseType as MelDatabaseTypes
+            databaseType :vData.SpDatabaseType as MelDatabaseTypes
           },
           createClientProjectOptions : {
-            name        : dlgData.AppCode + '-client',
-            version     : dlgData.Version,
-            description : `Client of application ${dlgData.AppName}`
+            name        : vData.AppCode + '-client',
+            version     : vData.Version,
+            description : `Client of application ${vData.AppName}`
           } 
         }
-        var updateAction = waitDialog(this.modal, this.createAppPrefix+"Running")
+        var progressController = animatedDialog (this.modal, { title : this.createAppPrefix+"Running", label : ''})
         this.workbenchService.createApp(createOptions)
         .subscribe({
           next : createResult => {
-            updateAction(null) // close the wait-dialog
+            progressController.stepper?.next(0) // close the wait-dialog
             MessageBox(this.modal, {
               title : createResult.success ? this.createAppPrefix+"Title" : 'App.Message.Error',
               message : this.createAppPrefix+(createResult.success?"Success" : "Failed"),
               context : {AppName : createOptions.appName },
               reportItems : createResult.success? undefined : createResult.details,
-              buttons : createResult.success ?  MsgDialogButton.YesNo : MsgDialogButton.GotIt,
+              buttons : createResult.success ?  MsgDlgButton.YesNo : MsgDlgButton.GotIt,
               default : MsgResult.Positive
             })
-            .subscribe( action => {
-              if (createResult.success && action == MsgResult.Positive){ // download the serverproject
+            .subscribe( msgResult => {
+              if (createResult.success && msgResult == MsgResult.Positive){ // download the serverproject
+              
               }             
             })
           },
           error : error => {
-            updateAction(null) // close the wait-dialog
+            progressController.stepper?.next(0) // close the wait-dialog
             MessageBox(this.modal, {
               title: 'App.Message.Error', 
               context : { AppName : createOptions.appName },
               message: this.createAppPrefix+"Failed",
-              buttons:MsgDialogButton.GotIt})
+              buttons: MsgDlgButton.GotIt})
           },
         }) // createApp
       }).catch( nop )   
+      
     }).catch( nop )
+   
   }
 
   private prepareCreateAppDlgData() : Promise<CreateAppDlgData>{
@@ -160,9 +165,9 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
         error : error =>  
           MessageBox(this.modal, { 
                       message : error,
-                      buttons : MsgDialogButton.GotIt
+                      buttons : MsgDlgButton.GotIt
           })
-          .subscribe( dc => reject(error)),
+          .subscribe( result => reject(error)),
         complete : () =>  {
           this.appService.getDatabases().subscribe({
             next : databaseNames => {  
@@ -175,20 +180,21 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
                 const msg = this.translate.instant('App.Message.NoDbAvailable')
                 MessageBox(this.modal, { 
                   message : msg,
-                  buttons : MsgDialogButton.GotIt
+                  buttons : MsgDlgButton.GotIt
                 })
                 .subscribe( dc => reject(msg))
               }
             },
             error : error => MessageBox(this.modal, { 
               message : error,
-              buttons : MsgDialogButton.GotIt
+              buttons : MsgDlgButton.GotIt
               })
               .subscribe( dc => reject(error) ),
           })
         }
       })
     })
+   
   }
 
   //#endregion

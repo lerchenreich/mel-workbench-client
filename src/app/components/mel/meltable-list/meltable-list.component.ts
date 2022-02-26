@@ -3,17 +3,18 @@ import { AfterViewInit, Component } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, Observable, BehaviorSubject, Subject}  from 'rxjs';
-
 import { map } from 'rxjs/operators'
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { TranslateService } from '@ngx-translate/core';
+import { NgbModal as ModalService} from '@ng-bootstrap/ng-bootstrap';
 import { TableMetadata, sqlToFieldtypesMap} from 'mel-common'
-import { ListRouted, MelTable, FieldInfo, MelField, MelTableService, AlertService, 
-         ProgressDialogData, MessageBox, MsgDialogButton, MsgDialogData, MsgResult, 
-        ProgressDialogComponent, AppService, MelFieldService, EntityService } from 'mel-client'
+import { ListRoutedPage, MelTable, FieldInfo, MelField, MelTableService, AlertService, 
+         MessageBox, MsgDlgButton, MsgDlgData, MsgResult, 
+         AppService, MelFieldService, EntityService,
+         progressBarDlg} from 'mel-client'
+import { ProgressDlgController } from 'mel-client/lib/components/modal/progress/progress';
 
-import { AppTablesDialogComponent }                   from '../../dialogs/apptables-dialog/apptables-dialog.component';       
-import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+//import { AppTablesDialogComponent }   from '../../dialogs/apptables-dialog/apptables-dialog.component';       
 
 @Component({
   selector: 'app-meltable-list',
@@ -22,13 +23,13 @@ import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
   providers: [{provide : MelTableService}]
 })
 @UntilDestroy()
-export class MelTableListComponent extends ListRouted<MelTable> implements  AfterViewInit {
+export class MelTableListComponent extends ListRoutedPage<MelTable> {
   
   constructor(private appService : AppService,
               private melFieldService : MelFieldService,
               entityService : MelTableService,
               router: Router, translate : TranslateService, 
-              modal : BsModalService, snackBar : MatSnackBar,
+              modal : ModalService, snackBar : MatSnackBar,
               alertService : AlertService) { 
     super(router, entityService, translate, modal, snackBar, alertService)
     this.accessRights = "md"
@@ -51,10 +52,10 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
   importTables($event:any){
     var tableNames = (this.listComponent?.selectedRowIndices.map( rowIndex => this.recordSet[rowIndex].Name ) || []) as string[]
     if (tableNames.length){
-      var dlgData : MsgDialogData  = {
+      var dlgData : MsgDlgData  = {
         title : 'Message.Import.Metadata.Title',
         message : `Message.Import.Metadata.Text`,
-        buttons : MsgDialogButton.YesNo,
+        buttons : MsgDlgButton.YesNo,
         default : MsgResult.Positive
       }
       MessageBox(this.modal, dlgData)
@@ -67,13 +68,14 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
         })  
     }
     else {
-      const dlgRef = this.modal.show(AppTablesDialogComponent, {backdrop: 'static'})
-      dlgRef.onHide?.subscribe( { 
-        next : (dc : any) => {
+      /* todo
+      const dlgRef = openModalDlg(this.modal, AppTablesDialogComponent)
+      .then( result : any) => {
           tableNames = dlgRef.content?.resultValue || []
-          if (tableNames.length)
+          if (result.length)
             this._importTables(tableNames)
-        }})
+        })
+      */
     }
   }
   /**
@@ -87,7 +89,7 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
    */
   private _importTables(tableNames : string[]){
     var canceled : boolean = false
-    var progressDlgRef : BsModalRef<ProgressDialogComponent>
+    var progressController : ProgressDlgController
     this.appService.getAppTablesMetadata( { database:'', columnInfo : true, condition : ` IN ('${tableNames.join("','")}')` } )
     .pipe(untilDestroyed(this))
     .subscribe( {
@@ -95,16 +97,15 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
         if (tablesMetadata.length > 0){
          
           if (tablesMetadata.length > 3){  
-            progressDlgRef = this.modal.show(ProgressDialogComponent, {
-              backdrop : 'static',
-              initialState : { 
-                title : 'Dialog.MetadataImport.ProgressTitle', 
+            progressController =  progressBarDlg(this.modal, { 
+                title : 'Dialog.MetadataImport.ProgressTitle',
+                label : '',
                 max : tablesMetadata.length, 
                 type : "success", 
+                textType : 'secondary',
                 height : "3em" 
-              }  
-            })
-            progressDlgRef.onHide?.subscribe( () => { canceled = true; throw 'Canceled'})
+              })  
+            progressController.cancelObservable.pipe(untilDestroyed(this)).subscribe( (dc:any) => { canceled = true; throw 'Canceled'})
           }
           try {
             var tablesMetadataIterator = new BehaviorSubject<TableMetadata>(tablesMetadata.pop() as TableMetadata)
@@ -113,9 +114,9 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
             .subscribe( {
               next : tableMetadata =>  {
                 if (tableMetadata && !canceled) {
-                  if (progressDlgRef && progressDlgRef.content){
-                    progressDlgRef.content.label = tableMetadata.Name
-                    progressDlgRef.content.current += 1
+                  if (progressController){
+                    progressController.stepper.next(1)
+                    progressController.label.next(tableMetadata.Name) 
                   }
                   this.rec.Name = tableMetadata.Name
                   this.get().subscribe( {
@@ -144,8 +145,6 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
                   })
                 }
                 else {
-                  if (progressDlgRef) 
-                    progressDlgRef.hide()
                   this.snack(this.translate.instant("Message.Import.Metadata.Done"))
                   this.refresh() 
                 }
@@ -157,8 +156,8 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
               this.snack(this.translate.instant("Message.Import.Metadata.Canceled"))
             }
             else {
-              if (progressDlgRef) 
-                progressDlgRef.hide()
+              if (progressController) 
+                progressController.stepper.next(0)
               this.snack(this.translate.instant("Message.Import.Metadata.Error"))
             }    
           }
@@ -189,7 +188,7 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
       melFields => {
         if (melFields) {
           colInfos.forEach(colInfo => {
-            const melColumn = melFields.find(col => col.Name === colInfo.Name)
+            const melColumn = melFields.find(col => col.Name === colInfo.Name) as MelField
             if (melColumn)
               columnObservables.push(this.updateMelColumn(colInfo, melColumn))
             else
@@ -240,13 +239,13 @@ export class MelTableListComponent extends ListRouted<MelTable> implements  Afte
       Format : ''  
     })
     colService.assignData(this.melColumnFromColInfo(melColumn, colInfo))
-    return colService.insert()
+    return colService.insert() as Observable<MelField>
   }
 
   updateMelColumn(colInfo : FieldInfo, melColumn : MelField) : Observable<MelField> {
     const colService = EntityService.createFrom(this.melFieldService)
     colService.assignData(Object.assign(colService.data, this.melColumnFromColInfo(melColumn, colInfo)))
-    return colService.update()
+    return colService.update() as Observable<MelField>
   }
   //#endregion
 }

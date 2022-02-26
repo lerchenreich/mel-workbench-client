@@ -1,15 +1,13 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy } from '@ngneat/until-destroy';
+import { NgbActiveModal as ModalActive } from '@ng-bootstrap/ng-bootstrap';
 
 import { isEmpty } from 'lodash'
 import { StringString } from 'mel-common';
 
-import { ClientConfig, CLIENT_CONFIG, AlertService, MelSetup, AppConnection } from 'mel-client';
+import { ClientConfig, CLIENT_CONFIG, AlertService, MelSetup, AppConnection, MelModal, AppService } from 'mel-client';
 import { WorkbenchService } from 'src/app/services/workbench-service';
-
-import { BsModalRef } from 'ngx-bootstrap/modal';
-import { MelModal } from '../mel-modal';
 
 export const createAppCommand = "__createApp__"
 
@@ -23,11 +21,11 @@ export const createAppCommand = "__createApp__"
  */
 @Component({
   selector: 'select-app-dialog',
-  templateUrl: './select-app-dialog.component.html',
-  styleUrls: ['./select-app-dialog.component.css']
+  templateUrl: './select-app-comp.html',
+
 })
 @UntilDestroy()
-export class SelectAppDialogComponent extends MelModal<any, AppConnection> implements OnInit {
+export class SelectAppComponent extends MelModal<any, AppConnection> implements OnInit {
   readonly transPrefix  = "App.Dialog.SelectApp."
   get Title()         { return this.transPrefix + "Title" }
   get NoServer()      { return this.transPrefix + "NoServer"}      
@@ -49,12 +47,12 @@ export class SelectAppDialogComponent extends MelModal<any, AppConnection> imple
 
   selectedApp: StringString = { key : createAppCommand, value : '' }
   
-  constructor(public  modalRef : BsModalRef, 
+  constructor(modalAct : ModalActive, 
               private workbenchService : WorkbenchService, 
               private alertService : AlertService, 
               public  translate : TranslateService, 
               @Inject(CLIENT_CONFIG) public config : ClientConfig) {
-    super(modalRef)
+    super(modalAct)
   }
  
   selectOptions : StringString[] = []

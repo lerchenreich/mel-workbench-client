@@ -74,3 +74,9 @@ label.mat-checkbox-layout {
   font-size: smaller;
   opacity: 0;
 }
+
+ngb-modal-window.mel {
+  z-index: 1;
+  background-color: rgb(240, 240, 240);
+}
+

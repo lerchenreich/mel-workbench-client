@@ -1,0 +1,53 @@
+
+<div class="modal-header" modalStyle="max-width:96%;">
+  <h4 class="modal-title" style="text-align: center;">{{transPrefix+'Title' | translate }}</h4>
+</div> 
+<div class="modal-body" style="text-align: center;">
+  <div class="separator"><span >Anwendung</span><div class="separatorHorz"></div></div>
+ 
+     <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('AppCode')"> </mel-card-field>  </div>
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('AppName')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('Version')" > </mel-card-field>   </div>  
+  </div>    
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('CompanyName')"> </mel-card-field>  </div>
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('CompanyDbName')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('DropExistingAppDatabase')" > </mel-card-field>   </div>  
+  </div>  
+  <div class="separator"><span >Serverprojekt</span><div class="separatorHorz"></div></div>
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpAuthor')"> </mel-card-field>  </div>
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpLicense')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpKeywords')" > </mel-card-field>   </div>  
+  </div>      
+  <div class="row flex-nowrap" >
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpServerPort')"> </mel-card-field>  </div>
+    <div class="col-lg"></div>
+    <div class="col-lg"></div>
+  </div>      
+  <div class="separator"><span >Datenbank Konfiguration</span><div class="separatorHorz"></div></div>
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDatabaseType')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigHost')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigPort')"> </mel-card-field>   </div>          
+  </div>      
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigUsername')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigPassword')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigDatabase')"> </mel-card-field>   </div>          
+  </div>      
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigSsl')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigTimeout')"> </mel-card-field>   </div> 
+    <div class="col-lg"></div>         
+  </div>      
+</div>
+
+ 
+<div class="modal-footer">
+  <button mat-raised-button color="warn" (click)="dismissClicked()">{{'Command.Cancel'|translate}}</button>
+  <button mat-raised-button color="primary" (click)="okClicked()" [disabled]="!isValid">{{'Command.Ok'|translate}}</button>
+</div>
+
+

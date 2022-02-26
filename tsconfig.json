@@ -10,6 +10,7 @@
     "declaration": false,
     "downlevelIteration": true,
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "moduleResolution": "node",
     "importHelpers": true,
     "allowSyntheticDefaultImports": true,
@@ -25,6 +26,7 @@
       "dom"
     ]
   },
+  
   "exclude" : [
     "src/assets", "src/app/components/functions/**/*"
   ],

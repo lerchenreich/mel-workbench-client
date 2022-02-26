@@ -34,8 +34,14 @@
     "Blank"    : "Muss leer sein",
     "NotZero" : "Darf nicht Null sein",
     "NotTrue" : "Muss inaktiv sein",
-    "True"    : "Muss aktiv sein",
-    "SqlIdentifier" : "Nur Buchstaben, Zahlen, '_' und '-' erlaubt"
+    "True" : "Muss aktiv sein",
+    "GreaterThan" : "Muss grösser als {{const}} sein",
+    "GreaterEqual" : "Muss grösser oder gleich {{const}} sein",
+    "LessThan" : "Muss kleiner als {{const}} sein",
+    "LessEqual" : "Muss kleiner oder gleich {{const}} sein",
+    "NoMatch": "Entspricht nicht dem Muster {{const}}",
+    "SqlIdentifier" : "Nur Buchstaben, Zahlen, '_' und '-' erlaubt",
+    "NoIPAddress" : "Ungültige IP-Adresse"
   },
   "Command" : {
     "Ok" : "OK",

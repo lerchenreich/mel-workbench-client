@@ -15,7 +15,7 @@
           "DropExistingAppDatabase" : "App-Datenbank löschen",
           "RenameCompanyDatabase" : "Mandanten-Datenbank umbenennen",
           "SpKeywords" : "Schlüsselbegriffe",
-          "SpAuthor" : "Author",
+          "SpAuthor" : "Autor",
           "SpLicense" : "Lizenz",
           "SpServerPort" : "Server-Port",
           "SpDbConfigHost" : "Host",
@@ -25,13 +25,18 @@
           "SpDbConfigDatabase" : "Datenbank",
           "SpDbConfigSsl" : "SSL",
           "SpDbConfigTimeout" : "Timeout [ms]",
-          "SpDatabaseType" : "Datenbanktyp"
+          "SpDatabaseType" : "Datenbanktyp",
+          "SpDatabaseTypeOptions" :{
+            "mysql" : "MySql",
+            "postgres" :"PostGres",
+            "mssql" : "Ms Sql-Server"
+          }
         },
         "Hint"  : {
           "AppCode" : "Eindeutiger Code der Anwendung",
           "AppName" : "Sichtbarer Anwendungsname",
           "Version" : "Version",
-          "CompanyName" : "1. Mandantenname",
+          "CompanyName" : "Erster Mandantenname",
           "CompanyDbName" : "Datenbankname der zugrunde liegenden Datenbank",
           "DropExistingAppDatabase" : "Gegebenenfalls existierende App-Datenbank löschen",
           "RenameCompanyDatabase" : "Mandanten-Datenbank umbennen nach [AppCode]_datenbankname",
@@ -46,8 +51,7 @@
           "SpDbConfigDatabase" : "Serverprojekt Datenbank-Name",
           "SpDbConfigSsl" : "Serverprojekt Datenbank-SSL",
           "SpDbConfigTimeout" : "Serverprojekt Datenbank-Timeout",
-          "SpDatabaseType" : "Serverprojekt Datenbank-Typ [mysql, postgres, mssql]"
-        }
+          "SpDatabaseType" : "Serverprojekt Datenbank-Typ [MyAql, Postgres, Ms SQL-Server]"        }
       }
     },
     "Message" : {
@@ -68,7 +72,6 @@
         "Running" : "Anwendung wird erstellt"
       }
     },
-
     "GettingStarted_copied from mel-client" : {
       "Title" : "App auswählen",
       "States" : {
@@ -123,7 +126,6 @@
         }
       }
     },
-  
     "Dialog" : {
       "SelectApp" : {
         "Title" : "Mit einer Anwendung verbinden",
@@ -147,8 +149,8 @@
         "WaitFor" : "Datenbank '{{appCode}}' wird erstellt",
         "Success" : "Datenbank '{{appCode}}' wurde erstellt",
         "Failed"  : "Datanbank '{{appCode}}' konnte nicht erstellt werden",
-  
-        "NoDbAvailable" : "Keine Anwenungsdatenbank für eine NEUE Anwendung verfügbar!"
+        "NoDbAvailable" : "Keine Anwenungsdatenbank für eine NEUE Anwendung verfügbar!",
+        "Code" : "Code eingeben"
       },
       "AppTables" : {
         "Title" : "Anwendungs-Tabellen"

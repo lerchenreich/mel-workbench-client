@@ -8,32 +8,29 @@ import { BrowserModule }                          from '@angular/platform-browse
 import { BrowserAnimationsModule }                from '@angular/platform-browser/animations'
 import { APP_INITIALIZER, NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { HttpClientModule, HttpClient }           from '@angular/common/http'
-
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { app }                                    from 'electron';
 //ngx-...
 import { ElectronService, NgxElectronModule }     from 'ngx-electron'
 import { NgScrollbarModule }                      from 'ngx-scrollbar'
-import { ModalModule, BsModalService }            from 'ngx-bootstrap/modal';
+import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core'
 import { MultiTranslateHttpLoader} from "ngx-translate-multi-http-loader";
 import { NgxSliderModule }            from '@angular-slider/ngx-slider';
-
-
-import { MessageDialogComponent }     from './components/dialogs/message-dialog/message-dialog.component';
 
 import { MaterialModule } from './material-module'
 import { AppRoutingModule } from './app-routing.module';
 
 // Services
 //#region  Dev-Environment
-import { WorkbenchInitializationService } from 'mel-client'
+import { AppService, WorkbenchInitializationService } from 'mel-client'
 //import { MelFieldService, MelTableService } from './services/melservices'
 //#endregion
 //#region App
 //import { AppInitializationService} from '../mel-client/services/initialization-service'
 //#endregion
 
-import { CLIENT_CONFIG, APP_MODUL_NAME, MelClientModule, IconService } from 'mel-client'
+import { CLIENT_CONFIG, APP_MODUL_NAME, IconService, MelClientModule } from 'mel-client'
 
 // components
 //import { ModalWaitComponent, PageBlankComponent, ProgressDialogComponent , CardSelectComponent, ConnectDialogComponent}   from 'mel-client';
@@ -41,13 +38,13 @@ import { CLIENT_CONFIG, APP_MODUL_NAME, MelClientModule, IconService } from 'mel
 import { PageNotFoundComponent}       from './components/page-not-found/page-not-found.component'
 import { MelTableListComponent }      from './components/mel/meltable-list/meltable-list.component';
 import { MelTableCardComponent }      from './components/mel/meltable-card/meltable-card.component';
-import { SelectAppDialogComponent }   from './components/dialogs/select-app-dialog/select-app-dialog.component'
+import { SelectAppComponent }         from './components/dialogs/select-app/select-app-comp'
 
 import { AppToolbarComponent }        from './components/app-toolbar/app-toolbar.component';
-import { AppRootComponent }           from './components/app-root/app-root.component';
+import { AppRootComponent }           from './components/app-root/app-root.comp';
 
 import { AppTablesDialogComponent }   from './components/dialogs/apptables-dialog/apptables-dialog.component';
-import { CreateAppDialogComponent }   from './components/dialogs/create-app-dialog/create-app-dialog.component';
+import { CreateAppDialogComponent }   from './components/dialogs/create-app/create-app-comp';
 
 import { initializationFactory }      from './initialization'
 import { WORKBENCH_CONFIG }           from './client.configs';
@@ -55,7 +52,7 @@ import { WORKBENCH_CONFIG }           from './client.configs';
 // services
 import { WorkbenchService }           from './services/workbench-service';
 import { ModalStyleDirective } from './components/directives';
-import { ModalWaitComponent } from './components/dialogs/modal-wait/modal-wait.component';
+import { CreateAppDlgDataTriggers } from './components/dialogs/create-app/data-triggers';
 
 // AoT requires an exported function for factories
 export function createTranslateLoader(http: HttpClient) {
@@ -73,14 +70,12 @@ export function createTranslateLoader(http: HttpClient) {
     AppRootComponent,     
     AppToolbarComponent,
     PageNotFoundComponent,
-    MelTableListComponent, MelTableCardComponent,
-    SelectAppDialogComponent, 
+    MelTableListComponent, 
+    MelTableCardComponent,
+    SelectAppComponent, 
     AppTablesDialogComponent,
     CreateAppDialogComponent,
-//--> mel-client
-    MessageDialogComponent,
-    ModalWaitComponent,
-    ModalStyleDirective
+    ModalStyleDirective,
   ],
   imports: [ 
     // wie mel-client
@@ -98,33 +93,33 @@ export function createTranslateLoader(http: HttpClient) {
     BrowserAnimationsModule,
     MaterialModule, 
     CdkTableModule,
-    ModalModule.forRoot(), 
     FormsModule, 
     ReactiveFormsModule,
+    NgbModalModule, 
     NgScrollbarModule,
+    NgbModule,
+ //   NgbProgressbarModule,
     NgxSliderModule,
 
     //App-spezifisch
     HttpClientModule,
     AppRoutingModule,
     MelClientModule,
-    NgxElectronModule,
-
-    //GridModule,
-    //FlexLayoutModule,
-
+    NgxElectronModule,   
   ],
   exports :[
   ],
   providers: [    
-    BsModalService,
+    NgbModal,
     TranslateService, 
     ElectronService,
     WorkbenchService,
+    AppService,
     //#region dev-environment
     WorkbenchInitializationService,
     { provide: APP_INITIALIZER, useFactory: initializationFactory,  deps: [WorkbenchInitializationService, TranslateService, IconService], multi : true },
     { provide: LOCALE_ID, useValue : window.navigator.language },
+    CreateAppDlgDataTriggers,
     //#endregion
     //#region app
     //{ provide: APP_INITIALIZER, useFactory: initializationFactory,  deps: [AppInitializationService, TranslateService], multi : true },

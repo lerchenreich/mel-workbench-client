@@ -1,11 +1,11 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
-import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+import { NgbModalRef as ModalRef, NgbModal as ModalService } from '@ng-bootstrap/ng-bootstrap';
 import { forkJoin } from 'rxjs'
 
 import { GetTablesOptions } from 'mel-common';
-import { AlertService, AppService, MelTableService, ListPage, ListRow, MelTable, FieldsMdMap } from "mel-client"
+import { AlertService, AppService, MelTableService,ListDbPage, RowUI, MelTable } from "mel-client"
 
 
 @Component({
@@ -13,19 +13,19 @@ import { AlertService, AppService, MelTableService, ListPage, ListRow, MelTable,
   templateUrl: './apptables-dialog.component.html',
   styleUrls: ['./apptables-dialog.component.css']
 })
-export class AppTablesDialogComponent extends ListPage<MelTable> implements OnInit{
+export class AppTablesDialogComponent extends ListDbPage<MelTable> implements OnInit{
   activeTables : string [] = []
   transPrefix = 'App.Dialog.AppTables.'
-  constructor(public modalRef : BsModalRef, 
+  constructor(public modalRef : ModalRef, 
               private appService : AppService, 
               melTableService : MelTableService,
               translate : TranslateService, 
-              modal : BsModalService, 
+              modal : ModalService, 
               snackBar  : MatSnackBar,
               alertService : AlertService) { 
   super(melTableService, translate, modal, snackBar, alertService)
   }
-  resultValue? : string[]
+
   @ViewChild('page',        { read: ElementRef }) pageRef?: ElementRef<HTMLElement>
   @ViewChild('pageSlider',  { read: ElementRef }) pageSliderRef?: ElementRef<HTMLDivElement>
   @ViewChild('pageTable',   { read: ElementRef }) tableRef?: ElementRef<HTMLTableElement>
@@ -43,12 +43,10 @@ export class AppTablesDialogComponent extends ListPage<MelTable> implements OnIn
   }
 
   okClicked() {
-    this.resultValue = this.listComponent ? this.listComponent.selectedRowIndices.map(i => this.recordSet[i].Name as string ) :[]
-    this.modalRef.hide()
+    this.modalRef.close(this.listComponent ? this.listComponent.selectedRowIndices.map(i => this.recordSet[i].Name as string ) :[])
   }
   dismissClicked() {
-    this.resultValue = undefined
-    this.modalRef.hide()
+    this.modalRef.dismiss()
   }
   /**
    * retrieve all tables
@@ -84,12 +82,16 @@ export class AppTablesDialogComponent extends ListPage<MelTable> implements OnIn
           })  
         }
       })
-  }
+  } 
 
   refresh(){
     this.setViewMode()
     this.pageCeil = Math.round(this.totalRecCount / this.pageSize)
-    this.dataSource.data = this.recordSet.map( (entity, index) => new ListRow(entity, this.fieldsMdMap as FieldsMdMap<MelTable>, index))
+    this.dataSource.data = this.recordSet.map( (entity, index) => {
+      const row = new RowUI<MelTable>(MelTable.name, index)
+      row.initialize(entity)
+      return row
+    })
     this.dataSource.connect()
   }
 

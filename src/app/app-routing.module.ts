@@ -5,7 +5,7 @@ import { MelTableListComponent }   from './components/mel/meltable-list/meltable
 import { MelTableCardComponent }   from './components/mel/meltable-card/meltable-card.component'
 
 import { baseRoutes } from 'mel-client';
-import { CreateAppDialogComponent } from './components/dialogs/create-app-dialog/create-app-dialog.component';
+import { CreateAppDialogComponent } from './components/dialogs/create-app/create-app-comp';
 
 const routes = ([
   { path: 'create-app' ,          component : CreateAppDialogComponent },

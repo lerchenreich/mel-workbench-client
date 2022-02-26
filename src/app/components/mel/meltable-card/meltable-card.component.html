@@ -13,7 +13,7 @@
       </mat-toolbar>
     </mat-card-header>
   
-    <mat-card-content *ngIf="cardData" ng-controller="card" fxLayout="column">
+    <mat-card-content *ngIf="ui" ng-controller="card" fxLayout="column">
       <div class="accordion" id="part1">
         <div class="accordion-item"  [expanded]="true" hideToggle>
           <h2 class="accordion-header" id="heading1">
