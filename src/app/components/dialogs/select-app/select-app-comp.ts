@@ -6,7 +6,7 @@ import { NgbActiveModal as ModalActive } from '@ng-bootstrap/ng-bootstrap';
 import { isEmpty } from 'lodash'
 import { StringString } from 'mel-common';
 
-import { ClientConfig, CLIENT_CONFIG, AlertService, MelSetup, AppConnection, MelModal, AppService } from 'mel-client';
+import { ClientConfig, CLIENT_CONFIG, AlertService, MelSetup, AppConnection, MelModal } from 'mel-client';
 import { WorkbenchService } from 'src/app/services/workbench-service';
 
 export const createAppCommand = "__createApp__"
@@ -54,7 +54,9 @@ export class SelectAppComponent extends MelModal<any, AppConnection> implements 
               @Inject(CLIENT_CONFIG) public config : ClientConfig) {
     super(modalAct)
   }
- 
+  set dlgData(data : any){
+
+  }
   selectOptions : StringString[] = []
   
   get returnValue(): AppConnection {

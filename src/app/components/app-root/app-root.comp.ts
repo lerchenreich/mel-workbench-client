@@ -5,8 +5,9 @@ import { AlertService, TemplateService, AppConnection,
          ClientRootComponent, 
          MelRecents, RecentWorkbenchApp,
          openModalDlg, 
-         MsgDlgButton,
-         animatedDialog} from "mel-client"
+         MsgDlgButton, MessageBox, MsgResult,
+         animatedDialog,
+         MsgReportItem} from "mel-client"
 import { MelDatabaseTypes, Version } from "mel-common"
 import { CreateAppOptions } from "mel-workbench-api"
 //import { BsModalService as ModalService } from "ngx-bootstrap/modal"
@@ -17,9 +18,6 @@ import { WorkbenchService } from "src/app/services/workbench-service"
 import { MenuCommand, MenuCommands } from "../app-toolbar/app-toolbar.component"
 import { CreateAppDialogComponent } from "../dialogs/create-app/create-app-comp"
 
-
-// --> mel-client
-import { MessageBox, MsgResult } from "mel-client"
 import { createAppCommand, SelectAppComponent } from "../dialogs/select-app/select-app-comp" 
 
 function nop(reason : any) {} 
@@ -90,8 +88,9 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
             name    : vData.CompanyName,
             dbName  : vData.CompanyDbName
           },
-          dropExistingAppDatabase : vData.DropExistingAppDatabase,
-          renameCompanyDatabase   : false, // dlgData.RenameCompanyDatabase,
+          //dropExistingAppDatabase : vData.DropExistingAppDatabase,
+          //renameCompanyDatabase   : false, // dlgData.RenameCompanyDatabase,
+          /*
           createServerProjectOptions : {
             name        : vData.AppCode+'-server',
             version     : vData.Version,
@@ -116,6 +115,7 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
             version     : vData.Version,
             description : `Client of application ${vData.AppName}`
           } 
+          */
         }
         var progressController = animatedDialog (this.modal, { title : this.createAppPrefix+"Running", label : ''})
         this.workbenchService.createApp(createOptions)
@@ -126,7 +126,13 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
               title : createResult.success ? this.createAppPrefix+"Title" : 'App.Message.Error',
               message : this.createAppPrefix+(createResult.success?"Success" : "Failed"),
               context : {AppName : createOptions.appName },
-              reportItems : createResult.success? undefined : createResult.details,
+              reportItems : createResult.success? [] : createResult.details.map(detail => { 
+                return { 
+                          annotation : detail.annotation, 
+                          message : detail.message, 
+                          result : detail.success}
+                      }
+              ),
               buttons : createResult.success ?  MsgDlgButton.YesNo : MsgDlgButton.GotIt,
               default : MsgResult.Positive
             })

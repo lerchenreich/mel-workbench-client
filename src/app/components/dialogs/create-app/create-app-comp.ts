@@ -1,12 +1,10 @@
-import { Component, Input } from '@angular/core';
+import { Component } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { NgbActiveModal as ModalRef} from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal as ActiveModal} from '@ng-bootstrap/ng-bootstrap';
 import { UntilDestroy } from '@ngneat/until-destroy';
 
-import { AppService, CardfieldContext, PageTypes } from 'mel-client';
+import { AppService, CardfieldContext, PageTypes, MelModalEntity  } from 'mel-client';
 import { CreateAppDlgData } from './data';
-import { MelModalEntity } from 'mel-client';
-
 
 @Component({
   selector: 'app-create-app-dialog',
@@ -29,8 +27,8 @@ import { MelModalEntity } from 'mel-client';
 export class CreateAppDialogComponent extends MelModalEntity<CreateAppDlgData, CreateAppDlgData> {
   readonly transPrefix  = "App.Dialog.CreateApp."
 
-  constructor(modalRef: ModalRef, protected appService:AppService, translate:TranslateService) {
-    super(modalRef, CreateAppDlgData.name, translate)
+  constructor(activeModal: ActiveModal, protected appService:AppService, translate:TranslateService) {
+    super(activeModal, CreateAppDlgData.name, translate)
     this.setEditMode()
   }  
   

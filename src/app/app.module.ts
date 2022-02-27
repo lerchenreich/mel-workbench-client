@@ -52,7 +52,6 @@ import { WORKBENCH_CONFIG }           from './client.configs';
 // services
 import { WorkbenchService }           from './services/workbench-service';
 import { ModalStyleDirective } from './components/directives';
-import { CreateAppDlgDataTriggers } from './components/dialogs/create-app/data-triggers';
 
 // AoT requires an exported function for factories
 export function createTranslateLoader(http: HttpClient) {
@@ -119,7 +118,6 @@ export function createTranslateLoader(http: HttpClient) {
     WorkbenchInitializationService,
     { provide: APP_INITIALIZER, useFactory: initializationFactory,  deps: [WorkbenchInitializationService, TranslateService, IconService], multi : true },
     { provide: LOCALE_ID, useValue : window.navigator.language },
-    CreateAppDlgDataTriggers,
     //#endregion
     //#region app
     //{ provide: APP_INITIALIZER, useFactory: initializationFactory,  deps: [AppInitializationService, TranslateService], multi : true },

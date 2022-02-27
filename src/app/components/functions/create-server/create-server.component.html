@@ -13,6 +13,36 @@
       </mat-toolbar>     
     </mat-card-header>
   
+    <div class="separator"><span >Serverprojekt</span><div class="separatorHorz"></div></div>
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpAuthor')"> </mel-card-field>  </div>
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpLicense')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpKeywords')" > </mel-card-field>   </div>  
+  </div>      
+  <div class="row flex-nowrap" >
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpServerPort')"> </mel-card-field>  </div>
+    <div class="col-lg"></div>
+    <div class="col-lg"></div>
+  </div>      
+  <div class="separator"><span >Datenbank Konfiguration</span><div class="separatorHorz"></div></div>
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDatabaseType')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigHost')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigPort')"> </mel-card-field>   </div>          
+  </div>      
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigUsername')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigPassword')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigDatabase')"> </mel-card-field>   </div>          
+  </div>      
+  <div class="row flex-nowrap">
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigSsl')"> </mel-card-field>   </div>          
+    <div class="col-lg mel-card-field"><mel-card-field [context]="context('SpDbConfigTimeout')"> </mel-card-field>   </div> 
+    <div class="col-lg"></div>         
+  </div>      
+
+
+  
     <mat-card-content ng-controller="card" fxLayout="column">
       <ngb-accordion #acc="ngbAccordion" activeIds="panel-default">
         <ngb-panel id="panel-default">
