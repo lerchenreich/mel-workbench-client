@@ -1,5 +1,6 @@
 {
   "Message" : {
+    "Error" : "Fehler",
     "NoConnection" : "Keine Verbindung zum Server",
     "Canceled" : "Vorgang abgebrochen",
     "DeleteTitle" : "Daten löschen", 

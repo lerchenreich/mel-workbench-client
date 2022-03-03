@@ -1,26 +1,30 @@
 import { AfterContentInit, Component} from "@angular/core"
 import { Router } from "@angular/router"
 import { TranslateService } from "@ngx-translate/core"
-import { AlertService, TemplateService, AppConnection,  
-         ClientRootComponent, 
+import { AlertService, TemplateService, AppConnection,
+         ClientRootComponent,
          MelRecents, RecentWorkbenchApp,
-         openModalDlg, 
-         MsgDlgButton, MessageBox, MsgResult,
-         animatedDialog,
-         MsgReportItem} from "mel-client"
-import { MelDatabaseTypes, Version } from "mel-common"
+         openModalDlg,
+         MessageBox,
+         ReportView,
+         MsgBoxButtons,
+         MsgBoxResult,
+         animatedDialog} from "mel-client"
+import { Version } from "mel-common"
 import { CreateAppOptions } from "mel-workbench-api"
-//import { BsModalService as ModalService } from "ngx-bootstrap/modal"
-import { NgbModal as ModalService, NgbActiveModal as ModalRef}  from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal as Modal }  from '@ng-bootstrap/ng-bootstrap';
 
 import { CreateAppDlgData } from "src/app/components/dialogs/create-app/data"
 import { WorkbenchService } from "src/app/services/workbench-service"
 import { MenuCommand, MenuCommands } from "../app-toolbar/app-toolbar.component"
 import { CreateAppDialogComponent } from "../dialogs/create-app/create-app-comp"
 
-import { createAppCommand, SelectAppComponent } from "../dialogs/select-app/select-app-comp" 
+import { createAppCommand, SelectAppComponent } from "../dialogs/select-app/select-app-comp"
+import { ReportItem } from "mel-workbench-api"
+import { noop } from "lodash"
 
-function nop(reason : any) {} 
+const errorTitle = 'Message.Error'
+
 @Component({
   selector: 'app-root',
   templateUrl: './app-root.comp.html',
@@ -28,26 +32,27 @@ function nop(reason : any) {}
 })
 export class AppRootComponent extends ClientRootComponent implements AfterContentInit {
   readonly createAppPrefix = "App.Function.CreateApp."
+  readonly createAppReportPrefix = this.createAppPrefix+'Report.'
 
   constructor(protected router: Router,
-              protected modal : ModalService,      
-              public    translate : TranslateService,        
+              protected modal : Modal,
+              public    translate : TranslateService,
               alertService : AlertService,
               private workbenchService : WorkbenchService,
               templateService : TemplateService
-             ){ 
+             ){
     super(alertService, workbenchService, templateService)
     if (workbenchService.hasEndpoint && workbenchService.isWorkbench())
       this.workbenchService.unlock()
-  } 
+  }
 
   ngAfterContentInit(){
     if (!this.workbenchService.hasEndpoint){
       openModalDlg<SelectAppComponent, any, AppConnection>(this.modal, SelectAppComponent, null)
-      .then( recentApp  => {     
+      .then( recentApp  => {
         if ( recentApp.code === createAppCommand )
           this.createApp()
-        else 
+        else
           this.changeApp(recentApp)
       })
       .catch(reason => this.alertService.alertWarning(reason))
@@ -70,13 +75,13 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
   }
 
   private createApp() {
-    
+
     this.prepareCreateAppDlgData()
     .then( (dlgData) => {
       openModalDlg<CreateAppDialogComponent, any, CreateAppDlgData>(
-        this.modal, 
-        CreateAppDialogComponent, 
-        dlgData 
+        this.modal,
+        CreateAppDialogComponent,
+        dlgData
       )
       .then( (dlgData) => {
         const vData = dlgData as Required<CreateAppDlgData>
@@ -94,7 +99,7 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
           createServerProjectOptions : {
             name        : vData.AppCode+'-server',
             version     : vData.Version,
-            description : `Express-Server for application ${vData.AppName}`, 
+            description : `Express-Server for application ${vData.AppName}`,
             keywords    : vData.SpKeywords?.split(',') || [],
             author      : vData.SpAuthor || '',
             license     : vData.SpLicense,
@@ -106,7 +111,7 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
               password  : vData.SpDbConfigPassword,
               database  : vData.SpDbConfigDatabase,
               ssl       : vData.SpDbConfigSsl,
-              timeout   : vData.SpDbConfigTimeout  
+              timeout   : vData.SpDbConfigTimeout
             },
             databaseType :vData.SpDatabaseType as MelDatabaseTypes
           },
@@ -114,93 +119,99 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
             name        : vData.AppCode + '-client',
             version     : vData.Version,
             description : `Client of application ${vData.AppName}`
-          } 
+          }
           */
         }
-        var progressController = animatedDialog (this.modal, { title : this.createAppPrefix+"Running", label : ''})
+        var progressController = animatedDialog (this.modal, {
+          title : this.createAppPrefix+"Title",
+          titleCtx : createOptions,
+          label : ''})
         this.workbenchService.createApp(createOptions)
         .subscribe({
           next : createResult => {
             progressController.stepper?.next(0) // close the wait-dialog
-            MessageBox(this.modal, {
-              title : createResult.success ? this.createAppPrefix+"Title" : 'App.Message.Error',
-              message : this.createAppPrefix+(createResult.success?"Success" : "Failed"),
-              context : {AppName : createOptions.appName },
-              reportItems : createResult.success? [] : createResult.details.map(detail => { 
-                return { 
-                          annotation : detail.annotation, 
-                          message : detail.message, 
+            ReportView(this.modal, {
+              title : createResult.success ? this.createAppReportPrefix+"Title" : errorTitle,
+              message : this.createAppReportPrefix+(createResult.success?"Success" : "Failed"),
+              context :createOptions,
+              reportItems : createResult.success? [] : createResult.details.map( (detail : ReportItem) => {
+                return {
+                          annotation : detail.annotation,
+                          message : detail.message,
                           result : detail.success}
                       }
               ),
-              buttons : createResult.success ?  MsgDlgButton.YesNo : MsgDlgButton.GotIt,
-              default : MsgResult.Positive
+              buttons : createResult.success ?  MsgBoxButtons.YesNo : MsgBoxButtons.GotIt,
+              default : MsgBoxResult.Positive
             })
-            .subscribe( msgResult => {
-              if (createResult.success && msgResult == MsgResult.Positive){ // download the serverproject
-              
-              }             
+            .then( msgResult => {
+              if (createResult.success && msgResult == MsgBoxResult.Positive){ // download the serverproject
+
+              }
             })
           },
           error : error => {
             progressController.stepper?.next(0) // close the wait-dialog
             MessageBox(this.modal, {
-              title: 'App.Message.Error', 
+              title: errorTitle,
               context : { AppName : createOptions.appName },
-              message: this.createAppPrefix+"Failed",
-              buttons: MsgDlgButton.GotIt})
+              message: this.createAppReportPrefix+"Failed",
+              buttons: MsgBoxButtons.GotIt})
           },
         }) // createApp
-      }).catch( nop )   
-      
-    }).catch( nop )
-   
+      }).catch( noop)
+
+    }).catch( noop )
+
   }
 
   private prepareCreateAppDlgData() : Promise<CreateAppDlgData>{
     return new Promise<CreateAppDlgData>( (resolve, reject) => {
       var appCodes : string[]
-      var appDbNames : string[] 
-      var entity = new CreateAppDlgData() 
-  
+      var appDbNames : string[]
+      var entity = new CreateAppDlgData()
+
       this.appService.getApps().subscribe({
         next : appSetups => {
           appCodes   = appSetups.map(setup => setup.AppCode as string)
           appDbNames = appSetups.map(setup => setup.AppDbName as string)
-        }, 
-        error : error =>  
-          MessageBox(this.modal, { 
+        },
+        error : error =>
+          MessageBox(this.modal, {
+                      title : errorTitle,
                       message : error,
-                      buttons : MsgDlgButton.GotIt
+                      buttons : MsgBoxButtons.GotIt
           })
-          .subscribe( result => reject(error)),
+          .then( result => { reject(error) }).catch( noop ),
         complete : () =>  {
           this.appService.getDatabases().subscribe({
-            next : databaseNames => {  
+            next : databaseNames => {
               const availableAppDatabases = (databaseNames as string[]).filter(name => !appDbNames.includes(name))
               if (availableAppDatabases?.length){
-                entity.CompanyDbName = entity.CompanyName = availableAppDatabases[0]
+                entity.CompanyDbName = availableAppDatabases.join('; ')
                 resolve(entity)
               }
               else {
                 const msg = this.translate.instant('App.Message.NoDbAvailable')
-                MessageBox(this.modal, { 
+                MessageBox(this.modal, {
+                  title : errorTitle,
                   message : msg,
-                  buttons : MsgDlgButton.GotIt
+                  buttons : MsgBoxButtons.GotIt
                 })
-                .subscribe( dc => reject(msg))
+                .then( dc => reject(msg)).catch( noop )
               }
             },
-            error : error => MessageBox(this.modal, { 
+            error : error => MessageBox(this.modal, {
+              title : errorTitle,
               message : error,
-              buttons : MsgDlgButton.GotIt
+              buttons : MsgBoxButtons.GotIt
               })
-              .subscribe( dc => reject(error) ),
+              .then( dc => reject(error) ).catch( noop ),
           })
         }
       })
     })
-   
+
   }
 
   //#endregion

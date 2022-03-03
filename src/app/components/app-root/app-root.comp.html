@@ -1,120 +1,120 @@
 
-<ng-template viewBoolean let-value="value">   
-  <mel-list-checkbox 
-    [value]="value" 
+<ng-template viewBoolean let-value="value">
+  <mel-list-checkbox
+    [value]="value"
     [editable]="false"
   ></mel-list-checkbox>
 </ng-template>
 
-<ng-template viewEnum 
-  let-meta="meta" 
-  let-value="value" 
-  let-editable="editable" > 
-  <mel-enum 
-    [sourceMap]="meta.enumValues" 
-    [targetMap]="meta.display.enumValues" 
-    [value]="value" 
+<ng-template viewEnum
+  let-meta="meta"
+  let-value="value"
+  let-editable="editable" >
+  <mel-enum
+    [sourceMap]="meta.enumValues"
+    [targetMap]="meta.display.enumValues"
+    [value]="value"
     [disabled]="!meta.editable"
   ></mel-enum>
-</ng-template> 
+</ng-template>
 
-<ng-template viewInput let-value="value">{{value}}</ng-template> 
+<ng-template viewInput let-value="value">{{value}}</ng-template>
 
-<ng-template listEnum 
-  let-value="value" 
+<ng-template listEnum
+  let-value="value"
   let-meta="meta"
   let-changedObs="changedObs">
-  <mel-list-select 
-    [value]="value" 
+  <mel-list-select
+    [value]="value"
     [options]="meta"
-    [changedObs]=" changedObs" 
+    [changedObs]=" changedObs"
   >
   </mel-list-select>
-</ng-template> 
+</ng-template>
 
-<ng-template listBoolean 
-  let-value="value" 
+<ng-template listBoolean
+  let-value="value"
   let-changedObs="changedObs"
   >
-  <mel-list-checkbox 
+  <mel-list-checkbox
     [value]="value"
     [editable]="true"
-    [changedObs]="changedObs" 
+    [changedObs]="changedObs"
   >
   </mel-list-checkbox>
 </ng-template>
 
-<ng-template listInput 
-  let-subtype="subType" 
-  let-value="value" 
+<ng-template listInput
+  let-subtype="subType"
+  let-value="value"
   let-lookupFor="lookupFor"
   let-assistObs="assistObs"
-  >     
-  <mel-list-input  
-    [subType]="subtype" 
-    [value]="value" 
+  >
+  <mel-list-input
+    [subType]="subtype"
+    [value]="value"
     [lookupFor]="lookupFor"
-    [assistObs]="assistObs" 
+    [assistObs]="assistObs"
   >
   </mel-list-input>
-</ng-template>     
+</ng-template>
 
-<ng-template cardEnum 
-  let-caption="caption" 
+<ng-template cardEnum
+  let-caption="caption"
   let-hint="hint"
   let-editable="editable"
-  let-value="value" 
-  let-options="meta" 
-  let-changedObs="changedObs" 
+  let-value="value"
+  let-options="meta"
+  let-changedObs="changedObs"
   >
-  <mel-card-select 
-    [caption]="caption" 
-    [hint]="hint" 
+  <mel-card-select
+    [caption]="caption"
+    [hint]="hint"
     [editable]="editable"
-    [value]="value" 
+    [value]="value"
     [options]="options"
-    [changedObs]="changedObs" 
+    [changedObs]="changedObs"
   ></mel-card-select>
-</ng-template> 
+</ng-template>
 
-<ng-template cardBoolean 
-  let-caption="caption" 
+<ng-template cardBoolean
+  let-caption="caption"
   let-hint="hint"
-  let-editable="editable"  
-  let-value="value" 
-  let-changedObs="changedObs"> 
+  let-editable="editable"
+  let-value="value"
+  let-changedObs="changedObs">
   <mel-card-checkbox
     [caption]="caption"
     [hint]="hint"
     [editable]="editable"
     [value]="value"
-    [changedObs]="changedObs" 
+    [changedObs]="changedObs"
   ></mel-card-checkbox>
 </ng-template>
 
-<ng-template cardInput 
-  let-caption="caption" 
+<ng-template cardInput
+  let-caption="caption"
   let-hint="hint"
-  let-subtype="subType" 
+  let-subtype="subType"
   let-editable="editable"
-  let-value="value" 
+  let-value="value"
   let-lookupFor="lookupFor"
   let-assistObs="assistObs"
   let-changedObs="changedObs"
-  > 
+  >
   <mel-card-input
     [caption]="caption"
     [hint]="hint"
-    [placeholder]="caption" 
-    [subType]="subtype" 
+    [placeholder]="caption"
+    [subType]="subtype"
     [editable]="editable"
     [value]="value"
     [lookupFor]="lookupFor"
     [assistObs]="assistObs"
-    [changedObs]="changedObs" 
+    [changedObs]="changedObs"
   >
   </mel-card-input>
-</ng-template>     
+</ng-template>
 
 <!-- App -->
 

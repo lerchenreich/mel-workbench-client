@@ -23,22 +23,23 @@ export class AppToolbarComponent implements OnInit {
   get RunSetup() : string { return this.transPrefix + "Setup" }
   get CreateApp() : string { return this.transPrefix + "CreateApp" }
   get AllApps() : string { return this.transPrefix + "AllApps" }
-  
-  appConnections : AppConnection[] = []
 
-  constructor(public translate: TranslateService, 
-              private alertService : AlertService,     
-              private appService : AppService ) {              
+
+  constructor(public translate: TranslateService,
+              private alertService : AlertService,
+              private appService : AppService ) {
   }
+  errorState : boolean = true
+  appConnections : AppConnection[] = []
 
   @Output() menuCommand  = new EventEmitter<MenuCommand>()
 
-  get menuData() { 
+  get menuData() {
     //const companiesExist = Recent.hasCompanies()
     const others = MelRecents.otherElements
     //const appsExist = this.allApps.length > 1
     return {
-      data : { 
+      data : {
         apps        : this.appConnections,
         recentApps  : others,
         //companies   : companiesExist? Recent.otherCompanies() : []
@@ -61,16 +62,17 @@ export class AppToolbarComponent implements OnInit {
           })
         },
         error :  error => {
-          console.error(error); 
+          this.errorState = true
           this.alertService.alertError(error)
-        }
+        },
+        complete: () => { this.errorState = false}
       })
     }
   }
 
   changeAppTo(appCode : string)  {
     this.menuCommand.emit({
-      name : MenuCommands.ChangeApp, 
+      name : MenuCommands.ChangeApp,
       param : this.appConnections.find(con => con.code ==  appCode)
     })
   }

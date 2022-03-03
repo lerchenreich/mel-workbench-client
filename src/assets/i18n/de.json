@@ -2,16 +2,19 @@
 {
   "App" : {
     "Title" : "Mel-Anwendungsenwicklung",
+    "Message" : {
+      "NoDbAvailable" : "Keine Datanbank vorhanden"
+    },
     "Entity" : {
       "CreateAppDlgData" : {
         "CaptionSingular" : "Neue Anwendung erstellen",
         "CaptionPlural" : "Neue Anwendung erstellen",
         "Caption" : {
-          "AppCode" : "Code",
-          "AppName" : "Name",
-          "Version" : "Version",
+          "AppCode" : "App-Code",
+          "AppName" : "App-Name",
+          "Version" : "App-Version",
           "CompanyName" : "Mandantenname",
-          "CompanyDbName" : "Datenbankname",
+          "CompanyDbName" : "Generieren aus Datenbank",
           "DropExistingAppDatabase" : "App-Datenbank löschen",
           "RenameCompanyDatabase" : "Mandanten-Datenbank umbenennen",
           "SpKeywords" : "Schlüsselbegriffe",
@@ -54,9 +57,6 @@
           "SpDatabaseType" : "Serverprojekt Datenbank-Typ [MyAql, Postgres, Ms SQL-Server]"        }
       }
     },
-    "Message" : {
-      "Error" : "Fehler !"
-    },
     "Menu" : {
       "AllApps" : "Anwendungen...",
       "CreateApp" :"Anwendung erstellen",
@@ -64,43 +64,7 @@
       "CreateClient" : "Clientprojekt erstellen",
       "Setup" : "Einrichtung"
     },
-    "Function" : {
-      "CreateApp" : {
-        "Title"   : "Anwendung erstellen",
-        "Success" : "Anwendung '{{AppName}}' erfolgreich erstellt. Klicken Sie auf 'Ja', um den Projektcode des Servers herunterzuladen",
-        "Failed" : "Anwendung '{{AppName}}' konnte nicht erstellt werden!",
-        "Running" : "Anwendung wird erstellt"
-      }
-    },
-    "GettingStarted_copied from mel-client" : {
-      "Title" : "App auswählen",
-      "States" : {
-        "MasterService" : {
-          "Error" : "Keine Verbindung zum Dev-Service ",
-          "Running" : "Dev-Service läuft"
-        },
-        "AppService" : {
-          "Error" : "Keine Verbindung zum App-Service",
-          "Running" : "App-Service läuft"
-        }
-      },
-      "Actions" : {
-        "StartMasterService" : "Starten Sie den Dev-Service!",
-        "StartAppService" : "Starten Sie den App-Service",
-        "CheckMasterService" : "Prüfen Sie Host [{{host}}] und Port [{{port}}] des Dev-Services!",
-        "CheckAppService" : "Prüfen Sie den App-Service-Endpoint [{{restAppEndpoint}}]!"
-       },
-       "Options" : {
-         "Create" : "Neue App"
-       },
-       "Field" : {
-         "Select" : {
-           "Label" : "Wählen Sie",
-           "Hint"  : "Wählen Sie eine App aus oder generieren eine neue App"
-         }
-       }
-    },
-  
+
     "CreateServer_copied from mel-client" : {
       "Title" : "REST-Server generieren",
       "WaitFor" : "wird generiert...",
@@ -131,30 +95,32 @@
         "Title" : "Mit einer Anwendung verbinden",
         "Url" : {
           "Label" : "Entwicklungsserver-Url",
-          "Hint" : "Geben Sie die IP-Adresse oder den erreichbaren Host des Enwicklungsserver ein",
+          "Hint" : "Geben Sie die IP-Adresse oder den erreichbaren Host incl. Port des Enwicklungsserver im Format [ip:port] ein",
           "Invalid" : "Die Url is ungültig"
         },
         "SelectApp" : {
           "Label" : "App-Code auswählen",
-          "Hint"  : "Wählen Sie hier den App-Code aus den zur Verfügung stehenden Apps aus oder 'App generieren'"
+          "Hint"  : "Wählen Sie hier den App-Code der Anwendung aus, mit der Sie sich verbinden möchten"
         },
         "NoServer" : "Keine Verbindung zum Server",
         "Command"  : {
           "Connect" : "Verbinden",
           "CreateApp" : "App generieren"
-        } 
-      },
-      "CreateApp" : {
-        "Title" : "Neue Anwendung erstellen",
-        "WaitFor" : "Datenbank '{{appCode}}' wird erstellt",
-        "Success" : "Datenbank '{{appCode}}' wurde erstellt",
-        "Failed"  : "Datanbank '{{appCode}}' konnte nicht erstellt werden",
-        "NoDbAvailable" : "Keine Anwenungsdatenbank für eine NEUE Anwendung verfügbar!",
-        "Code" : "Code eingeben"
-      },
-      "AppTables" : {
-        "Title" : "Anwendungs-Tabellen"
+        }
       }
+    },
+    "Function" : {
+      "CreateApp" : {
+        "Title" : "Datenbank '{{appCode}}_app' für App '{{appName}}' wird erstellt",
+        "Report" : {
+          "Title" : "Neue Anwendung '{{appName}}'",
+          "Success" : "Datenbank '{{appCode}}_app' für Anwendung '{{appName}}' wurde erstellt. Möchten Sie im nächsten Schritt das Serverprojekt erstellen?",
+          "Failed"  : "Datenbank '{{appCode}}_app' konnte nicht erstellt werden"
+        }
+      }
+    },
+    "AppTables" : {
+        "Title" : "Anwendungs-Tabellen"
     }
   }
 }
