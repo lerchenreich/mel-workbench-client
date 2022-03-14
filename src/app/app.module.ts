@@ -44,7 +44,7 @@ import { AppToolbarComponent }        from './components/app-toolbar/app-toolbar
 import { AppRootComponent }           from './components/app-root/app-root.comp';
 
 import { AppTablesDialogComponent }   from './components/dialogs/apptables-dialog/apptables-dialog.component';
-import { CreateAppDialogComponent }   from './components/dialogs/create-app/create-app-comp';
+import { CreateAppDlgComponent }   from './components/dialogs/create-app/create-app-comp';
 
 import { initializationFactory }      from './initialization'
 import { WORKBENCH_CONFIG }           from './client.configs';
@@ -52,6 +52,7 @@ import { WORKBENCH_CONFIG }           from './client.configs';
 // services
 import { WorkbenchService }           from './services/workbench-service';
 import { ModalStyleDirective } from './components/directives';
+import { CreateServerComponent } from './components/dialogs/create-server-project/create-server.comp';
 
 // AoT requires an exported function for factories
 export function createTranslateLoader(http: HttpClient) {
@@ -65,18 +66,19 @@ export function createTranslateLoader(http: HttpClient) {
   id : APP_MODUL_NAME,
   bootstrap: [AppRootComponent],
   schemas : [NO_ERRORS_SCHEMA],
-  declarations: [ 
-    AppRootComponent,     
+  declarations: [
+    AppRootComponent,
     AppToolbarComponent,
     PageNotFoundComponent,
-    MelTableListComponent, 
+    MelTableListComponent,
     MelTableCardComponent,
-    SelectAppComponent, 
+    SelectAppComponent,
     AppTablesDialogComponent,
-    CreateAppDialogComponent,
+    CreateAppDlgComponent,
+    CreateServerComponent,
     ModalStyleDirective,
   ],
-  imports: [ 
+  imports: [
     // wie mel-client
     CommonModule,
     TranslateModule.forRoot({
@@ -90,11 +92,11 @@ export function createTranslateLoader(http: HttpClient) {
     }),
     BrowserModule,
     BrowserAnimationsModule,
-    MaterialModule, 
+    MaterialModule,
     CdkTableModule,
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
-    NgbModalModule, 
+    NgbModalModule,
     NgScrollbarModule,
     NgbModule,
  //   NgbProgressbarModule,
@@ -104,13 +106,13 @@ export function createTranslateLoader(http: HttpClient) {
     HttpClientModule,
     AppRoutingModule,
     MelClientModule,
-    NgxElectronModule,   
+    NgxElectronModule,
   ],
   exports :[
   ],
-  providers: [    
+  providers: [
     NgbModal,
-    TranslateService, 
+    TranslateService,
     ElectronService,
     WorkbenchService,
     AppService,
@@ -121,9 +123,9 @@ export function createTranslateLoader(http: HttpClient) {
     //#endregion
     //#region app
     //{ provide: APP_INITIALIZER, useFactory: initializationFactory,  deps: [AppInitializationService, TranslateService], multi : true },
-    
+
     //#endregion
-    { provide: CLIENT_CONFIG, useValue: WORKBENCH_CONFIG}, 
+    { provide: CLIENT_CONFIG, useValue: WORKBENCH_CONFIG},
   //  { provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: {hasBackdrop: true}},
   //  {provide: DateAdapter, useClass: MomentDateAdapter,deps: [MAT_DATE_LOCALE, MAT_MOMENT_DATE_ADAPTER_OPTIONS]},
   //  {provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: {strict: true}},

@@ -63,8 +63,7 @@ var electron_1 = require("electron");
 var path = __importStar(require("path"));
 var fs = __importStar(require("fs"));
 var jszip_1 = __importDefault(require("jszip"));
-var url = __importStar(require("url"));
-var mainWindow = null;
+var mainWindow;
 var args = process.argv.slice(1);
 var serveParam = args.find(function (arg) { return arg.startsWith('--serve='); });
 function createWindow() {
@@ -93,11 +92,7 @@ function createWindow() {
         mainWindow.loadURL(serveParam.split('=')[1]); // "http://localhost:3041/#" )
     }
     else {
-        mainWindow.loadURL(url.format({
-            pathname: path.join(__dirname, 'dist/index.html'),
-            protocol: 'file:',
-            slashes: true
-        }));
+        mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
     }
 } // createWindow
 // This method will be called when Electron has finished

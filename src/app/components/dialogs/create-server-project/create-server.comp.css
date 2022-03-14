@@ -1,0 +1,29 @@
+.separatorHorz {
+  grid-column : 1/4;
+  border: 0;
+  background-color: lightgray;
+  height: 1px;
+  margin-bottom:0.4rem;
+  margin-top: 0.4rem;
+  text-align: right;
+}
+.separator {
+  text-align: left;
+  font-weight: 400;
+}
+.bodyGrid {
+  display: grid;
+  grid-gap: 10px 20px;
+}
+.gridColumns1 {
+  grid-template-columns: 1fr;
+}
+.gridColumns2 {
+  grid-template-columns: 1fr 1fr;
+}
+.gridColumns3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.gridColumns4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}

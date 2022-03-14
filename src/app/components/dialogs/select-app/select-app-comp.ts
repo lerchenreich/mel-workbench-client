@@ -112,7 +112,7 @@ export class SelectAppComponent extends MelModal<any, AppConnection> implements 
         if (this.connected){
           this.workbenchService.unlock()
           this.urlErrorText = ''
-          this.workbenchService.getApps().subscribe({
+          this.workbenchService.getAppSetups().subscribe({
             next : melSetups => this.setSelectOptions(melSetups),
             error: err => {
               this.connected = false

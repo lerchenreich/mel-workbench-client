@@ -19,7 +19,7 @@ import { noop } from 'lodash';
 @Component({
   selector: 'app-meltable-list',
   templateUrl: './meltable-list.component.html',
-  styleUrls: ['./meltable-list.css'],
+
   providers: [{provide : MelTableService}]
 })
 @UntilDestroy()

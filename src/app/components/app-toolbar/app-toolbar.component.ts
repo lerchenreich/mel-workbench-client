@@ -13,8 +13,7 @@ export enum MenuCommands {
 }
 @Component({
   selector: 'app-toolbar',
-  templateUrl: './app-toolbar.component.html',
-  styleUrls: ['./app-toolbar.component.css']
+  templateUrl: './app-toolbar.component.html'
 })
 export class AppToolbarComponent implements OnInit {
   readonly transPrefix = 'App.Menu.'
@@ -53,7 +52,7 @@ export class AppToolbarComponent implements OnInit {
   }
   ngOnInit(): void {
     if (this.appService.hasEndpoint){
-      this.appService.getApps()
+      this.appService.getAppSetups()
       .subscribe( {
         next : (setups : MelSetup[]) => {
           this.appConnections = setups.map(setup => {

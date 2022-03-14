@@ -15,8 +15,10 @@ export class CreateAppDlgData extends Entity{
   Version? : string
   @Field({type : FieldTypes.String, validators:[notBlank],default : "" })
   CompanyName? : string
-  @Field({type : FieldTypes.String, validators:[notBlank], default : ""})
+  @Field({type : FieldTypes.Enum, enumValues : [],display : { doNotTranslate : true}, validators:[notBlank], default : ""})
   CompanyDbName? : string
+
+  CompanyDbNames? : string[]
 
   constructor(init? : Partial<CreateAppDlgData>){
     super(CreateAppDlgData.name, init as Entity)

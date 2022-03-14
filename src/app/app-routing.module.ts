@@ -5,13 +5,13 @@ import { MelTableListComponent }   from './components/mel/meltable-list/meltable
 import { MelTableCardComponent }   from './components/mel/meltable-card/meltable-card.component'
 
 import { baseRoutes } from 'mel-client';
-import { CreateAppDialogComponent } from './components/dialogs/create-app/create-app-comp';
+import { CreateAppDlgComponent } from './components/dialogs/create-app/create-app-comp';
 
 const routes = ([
-  { path: 'create-app' ,          component : CreateAppDialogComponent },
+  { path: 'create-app' ,          component : CreateAppDlgComponent },
   { path: 'meltable-list' ,       component : MelTableListComponent},
   { path: 'meltable-card/:name',  component : MelTableCardComponent},
-  { path: 'meltable-card' ,       component : MelTableCardComponent}, 
+  { path: 'meltable-card' ,       component : MelTableCardComponent},
 ] as Routes).concat(baseRoutes);
 
 @NgModule({

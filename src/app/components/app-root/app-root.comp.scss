@@ -5,7 +5,7 @@
       --scrollbar-hover-size: 12px;
       --scrollbar-track-color: rgba(0, 0, 0, 0.05);
       --scrollbar-border-radius: 10px;
-  
+
       height: 800px;
       max-height: 800px;
       border-radius: 3px;
@@ -28,7 +28,7 @@
         bottom: 6px;
         background-color: #333;
         border-color: white;
-        border-top-left-radius: 3px; 
+        border-top-left-radius: 3px;
         border-top-right-radius: 3px;
     }
     .pageSlider .ng5-slider .ng5-slider-pointer:after {
@@ -50,12 +50,12 @@
         background: lightblue;
         top: -1px;
       }
-    
+
     .pageSlider .ng5-slider .ng5-slider-ticks-values-under .ng5-slider-tick-value {
         font-size: 10px;
         bottom:-20px;
       }
-  
+
     .pageSlider .ng5-slider .ng5-slider-limit {
         font-weight: bold;
     }
@@ -72,7 +72,7 @@
     }
     .pageSlider-v .ng5-slider.vertical .ng5-slider-bar-wrapper {
       width: 20px;
-    } 
+    }
     .pageSlider-v .ng5-slider .ng5-slider-bar {
       background: var(--colorUnselected);
       height: 2px;
@@ -99,7 +99,7 @@
     .pageSlider-v .ng5-slider.vertical .ng5-slider-limit {
         font-weight: bold;
     }
-       
+
     .pageSlider-v .ng5-slider .ng5-slider-tick {
         width: 10px;
         height: 1px;
@@ -108,7 +108,7 @@
         background: var(--colorUnselected);
         top: -1px;
       }
-    
+
     .pageSlider-v .ng5-slider .ng5-slider-ticks-values-under .ng5-slider-tick-value {
         font-size: 10px;
         bottom:-20px;
@@ -119,7 +119,7 @@
     }
 
     /* Datum */
-    
+
     .dateSlider .ng5-slider .ng5-slider-bar {
         background: lightgray;
         height: 2px;
@@ -134,7 +134,7 @@
         bottom: 6px;
         background-color: #333;
         border-color: white;
-        border-top-left-radius: 3px; 
+        border-top-left-radius: 3px;
         border-top-right-radius: 3px;
     }
     .dateSlider .ng5-slider .ng5-slider-pointer:after {
@@ -155,10 +155,10 @@
         background: lightblue;
         top: -1px;
       }
-    
+
     .dateSlider .ng5-slider .ng5-slider-tick.ng5-slider-selected {
        background: blue;
     }
-  
+
   }
-  
+

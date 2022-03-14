@@ -9,38 +9,36 @@ import { CreateAppDlgData } from './data';
 @Component({
   selector: 'app-create-app-dialog',
   templateUrl: './create-app-comp.html',
-  styles: [`
-    .separatorHorz {
-      border: 0;
-      background-color: lightgray;
-      height: 1px;
-      margin-bottom: 12px;
-      text-align: right;
-    }`,`
-    .separator {
-      text-align: left;
-      font-weight: 400;
-    }`
-    ]
+
 })
 @UntilDestroy()
-export class CreateAppDialogComponent extends MelModalEntity<CreateAppDlgData, CreateAppDlgData> {
+export class CreateAppDlgComponent extends MelModalEntity<CreateAppDlgData, CreateAppDlgData> {
   readonly transPrefix  = "App.Dialog.CreateApp."
 
   constructor(activeModal: ActiveModal, protected appService:AppService, translate:TranslateService) {
     super(activeModal, CreateAppDlgData.name, translate)
     this.setEditMode()
-  }  
-  
+  }
+
   get title() { return this.caption }
   get pageType(): PageTypes { return PageTypes.ModalDialog }
+  companyDbNames? : string[]
   // abstract member implementation
   get returnValue() : CreateAppDlgData{ return this.entityUI.pickEntityFields() as CreateAppDlgData}
 
   override context(fieldName : string) : CardfieldContext{
-    return Object.assign(super.context(fieldName), { editable : true })    
-      //touchedObs : { next : field => this.Rec.triggerColumn(field.name, field.validationRec)}, 
-  }    
- 
+    return Object.assign(super.context(fieldName), { editable : true })
+  }
+  dbNameContext() : CardfieldContext {
+    const context = this.context('CompanyDbName')
+    context.meta.enumValues = this.companyDbNames
+    return context
+  }
+
+  protected override mapEntity(entity : Partial<CreateAppDlgData>) : Partial<CreateAppDlgData>{
+    this.companyDbNames = entity.CompanyDbNames?.slice()
+    return entity
+  }
+
 }
 

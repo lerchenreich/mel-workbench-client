@@ -1,45 +1,58 @@
 import { AfterContentInit, Component} from "@angular/core"
 import { Router } from "@angular/router"
 import { TranslateService } from "@ngx-translate/core"
+import { noop } from "lodash"
+
+import { MelDatabaseTypes, Version } from "mel-common"
 import { AlertService, TemplateService, AppConnection,
          ClientRootComponent,
          MelRecents, RecentWorkbenchApp,
          openModalDlg,
-         MessageBox,
          ReportView,
          MsgBoxButtons,
          MsgBoxResult,
-         animatedDialog} from "mel-client"
-import { Version } from "mel-common"
-import { CreateAppOptions } from "mel-workbench-api"
+         animatedDialog,
+         MelCompanyService,
+         ErrorMessage} from "mel-client"
+import { CreateAppOptions, CreateServerProjectOptions} from "mel-workbench-api"
 import { NgbModal as Modal }  from '@ng-bootstrap/ng-bootstrap';
+import { ElectronService } from "ngx-electron"
+import JSZip from "jszip"
 
-import { CreateAppDlgData } from "src/app/components/dialogs/create-app/data"
-import { WorkbenchService } from "src/app/services/workbench-service"
+import { lastValueFrom } from "rxjs"
+import { CreateAppDlgData } from "../../components/dialogs/create-app/data"
+import { WorkbenchService } from "../../services/workbench-service"
 import { MenuCommand, MenuCommands } from "../app-toolbar/app-toolbar.component"
-import { CreateAppDialogComponent } from "../dialogs/create-app/create-app-comp"
+import { CreateAppDlgComponent } from "../dialogs/create-app/create-app-comp"
 
 import { createAppCommand, SelectAppComponent } from "../dialogs/select-app/select-app-comp"
-import { ReportItem } from "mel-workbench-api"
-import { noop } from "lodash"
 
-const errorTitle = 'Message.Error'
+import { CreateServerComponent } from "../dialogs/create-server-project/create-server.comp"
+import { CreateServerDlgData } from "../dialogs/create-server-project/data"
+
+
+const appFunction = "App.Function."
+const createAppPrefix = appFunction +"CreateApp."
+const createAppReportPrefix = createAppPrefix+'Report.'
+
+const createServerPrefix = appFunction +"CreateServer."
+const createServerReportPrefix = createServerPrefix+'Report.'
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app-root.comp.html',
-  styleUrls: ['./app-root.comp.scss']
+  templateUrl: './app-root.comp.html'
+  //styleUrls: ['./app-root.comp.scss'] //scrollbars????
 })
 export class AppRootComponent extends ClientRootComponent implements AfterContentInit {
-  readonly createAppPrefix = "App.Function.CreateApp."
-  readonly createAppReportPrefix = this.createAppPrefix+'Report.'
 
   constructor(protected router: Router,
               protected modal : Modal,
               public    translate : TranslateService,
               alertService : AlertService,
               private workbenchService : WorkbenchService,
-              templateService : TemplateService
+              private companyService : MelCompanyService,
+              templateService : TemplateService,
+              private eSvc : ElectronService
              ){
     super(alertService, workbenchService, templateService)
     if (workbenchService.hasEndpoint && workbenchService.isWorkbench())
@@ -60,10 +73,11 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
   }
 
   //#region Menu-functions
-  menuCommand(menuCommand : MenuCommand){
+  async menuCommand(menuCommand : MenuCommand){
     switch(menuCommand.name){
       case MenuCommands.ChangeApp : if (menuCommand.param) this.changeApp(menuCommand.param); break
-      case MenuCommands.CreateApp : this.createApp(); break
+      case MenuCommands.CreateApp : await this.createApp(); break
+      case MenuCommands.CreateServer : await this.createServerProject()
     }
   }
 
@@ -74,145 +88,223 @@ export class AppRootComponent extends ClientRootComponent implements AfterConten
     MelRecents.lastRecent = new RecentWorkbenchApp(appConnection)
   }
 
-  private createApp() {
+  private async createApp() : Promise<void>{
 
-    this.prepareCreateAppDlgData()
-    .then( (dlgData) => {
-      openModalDlg<CreateAppDialogComponent, any, CreateAppDlgData>(
-        this.modal,
-        CreateAppDialogComponent,
-        dlgData
-      )
-      .then( (dlgData) => {
-        const vData = dlgData as Required<CreateAppDlgData>
-        var createOptions : CreateAppOptions = {
-          appCode : vData.AppCode,
-          appName : vData.AppName,
-          version : new Version(vData.Version),
-          company : {
-            name    : vData.CompanyName,
-            dbName  : vData.CompanyDbName
-          },
-          //dropExistingAppDatabase : vData.DropExistingAppDatabase,
-          //renameCompanyDatabase   : false, // dlgData.RenameCompanyDatabase,
-          /*
-          createServerProjectOptions : {
-            name        : vData.AppCode+'-server',
-            version     : vData.Version,
-            description : `Express-Server for application ${vData.AppName}`,
-            keywords    : vData.SpKeywords?.split(',') || [],
-            author      : vData.SpAuthor || '',
-            license     : vData.SpLicense,
-            serverPort  : vData.SpServerPort,
-            dbConfig: {
-              host      : vData.SpDbConfigHost,
-              port      : vData.SpDbConfigPort,
-              username  : vData.SpDbConfigUsername,
-              password  : vData.SpDbConfigPassword,
-              database  : vData.SpDbConfigDatabase,
-              ssl       : vData.SpDbConfigSsl,
-              timeout   : vData.SpDbConfigTimeout
-            },
-            databaseType :vData.SpDatabaseType as MelDatabaseTypes
-          },
-          createClientProjectOptions : {
-            name        : vData.AppCode + '-client',
-            version     : vData.Version,
-            description : `Client of application ${vData.AppName}`
-          }
-          */
+    try{
+      var dlgData = await this.prepareCreateAppDlgData()
+      try{
+        dlgData = await openModalDlg<CreateAppDlgComponent, any, CreateAppDlgData>(
+          this.modal,
+          CreateAppDlgComponent,
+          dlgData
+        )
+      }
+      catch(canceled) { noop; return; }
+
+      const vData = dlgData as Required<CreateAppDlgData>
+      var createOptions : CreateAppOptions = {
+        appCode : vData.AppCode,
+        appName : vData.AppName,
+        version : new Version(vData.Version),
+        company : {
+          name    : vData.CompanyName,
+          dbName  : vData.CompanyDbName
         }
-        var progressController = animatedDialog (this.modal, {
-          title : this.createAppPrefix+"Title",
-          titleCtx : createOptions,
-          label : ''})
-        this.workbenchService.createApp(createOptions)
-        .subscribe({
-          next : createResult => {
-            progressController.stepper?.next(0) // close the wait-dialog
-            ReportView(this.modal, {
-              title : createResult.success ? this.createAppReportPrefix+"Title" : errorTitle,
-              message : this.createAppReportPrefix+(createResult.success?"Success" : "Failed"),
-              context :createOptions,
-              reportItems : createResult.success? [] : createResult.details.map( (detail : ReportItem) => {
-                return {
-                          annotation : detail.annotation,
-                          message : detail.message,
-                          result : detail.success}
-                      }
-              ),
-              buttons : createResult.success ?  MsgBoxButtons.YesNo : MsgBoxButtons.GotIt,
-              default : MsgBoxResult.Positive
-            })
-            .then( msgResult => {
-              if (createResult.success && msgResult == MsgBoxResult.Positive){ // download the serverproject
+      }
 
-              }
-            })
-          },
-          error : error => {
-            progressController.stepper?.next(0) // close the wait-dialog
-            MessageBox(this.modal, {
-              title: errorTitle,
-              context : { AppName : createOptions.appName },
-              message: this.createAppReportPrefix+"Failed",
-              buttons: MsgBoxButtons.GotIt})
-          },
-        }) // createApp
-      }).catch( noop)
+      var progressController = animatedDialog (this.modal, {
+        title : createAppPrefix+"Title",
+        titleCtx : createOptions,
+        label : ''})
 
-    }).catch( noop )
+      try{
+        var createResult = await lastValueFrom(this.workbenchService.createApp(createOptions))
+      }
+      catch(error){
+        ErrorMessage(this.modal, createAppReportPrefix+"Failed", createOptions)
+        return
+      }
+      finally{
+        progressController.stepper?.next(0) // close the animated-dialog
+      }
+      try{
+        if (createResult.success){
+          if (await this.appService.changeApp(createOptions.appCode))
+            this.changeApp({url : '', code : createOptions.appCode, name : createOptions.appName })
+          else {
+            ErrorMessage(this.modal, `Can't change to app with appCode "${createOptions.appCode}" `)
+            return
+          }
+        }
+        ReportView(this.modal, {
+          title   : createAppReportPrefix+ (createResult.success ? "Title" : "ErrorTitle"),
+          message : createAppReportPrefix+ (createResult.success ? "Success" : "Failed"),
+          context :createOptions,
+          reportItems : createResult.success? [] : createResult.reportItems,
+          buttons : createResult.success ?  MsgBoxButtons.YesNo : MsgBoxButtons.GotIt,
+          default : MsgBoxResult.Positive
+        })
+        .then( async msgResult => {
+          if (createResult.success && msgResult == MsgBoxResult.Positive){ // create and download the serverproject
+            this.createServerProject().then(noop).catch(noop)
+          }
+        })
+        .catch( noop )
+      }
+      catch(error){
+        progressController.stepper?.next(0) // close the wait-dialog
+        ErrorMessage(this.modal, error as Error)
+      }
+     }
+    catch(error){
+      ErrorMessage(this.modal, error as Error)
+    }
 
   }
 
-  private prepareCreateAppDlgData() : Promise<CreateAppDlgData>{
+  private async prepareCreateAppDlgData() : Promise<CreateAppDlgData>{
     return new Promise<CreateAppDlgData>( (resolve, reject) => {
       var appCodes : string[]
-      var appDbNames : string[]
+      var appDbNames : string[] = []
+      var companyDbNames : string[] = []
       var entity = new CreateAppDlgData()
 
-      this.appService.getApps().subscribe({
+      this.workbenchService.getAppSetups().subscribe({
         next : appSetups => {
           appCodes   = appSetups.map(setup => setup.AppCode as string)
           appDbNames = appSetups.map(setup => setup.AppDbName as string)
         },
-        error : error =>
-          MessageBox(this.modal, {
-                      title : errorTitle,
-                      message : error,
-                      buttons : MsgBoxButtons.GotIt
-          })
-          .then( result => { reject(error) }).catch( noop ),
-        complete : () =>  {
-          this.appService.getDatabases().subscribe({
+        error : error => reject(error),
+        complete : async () =>  {
+          // get all company-databasenames to exclude
+          try{
+            for(let appCode of appCodes){
+              if (await this.workbenchService.changeApp(appCode))
+                await this.companyService.findMany()
+                .forEach(companies =>
+                  companyDbNames.push(...companies.map(company =>
+                    company.DbName as string)))
+            }
+          }
+          catch(error){
+            reject(error)
+            return
+          }
+          this.workbenchService.getDatabases().subscribe({
             next : databaseNames => {
-              const availableAppDatabases = (databaseNames as string[]).filter(name => !appDbNames.includes(name))
-              if (availableAppDatabases?.length){
-                entity.CompanyDbName = availableAppDatabases.join('; ')
+              entity.CompanyDbNames = databaseNames.filter(name => !appDbNames.includes(name) && !companyDbNames.includes(name))
+              if (entity.CompanyDbNames.length){
                 resolve(entity)
               }
               else {
-                const msg = this.translate.instant('App.Message.NoDbAvailable')
-                MessageBox(this.modal, {
-                  title : errorTitle,
-                  message : msg,
-                  buttons : MsgBoxButtons.GotIt
-                })
-                .then( dc => reject(msg)).catch( noop )
+                reject('App.Message.NoDbAvailable')
               }
             },
-            error : error => MessageBox(this.modal, {
-              title : errorTitle,
-              message : error,
-              buttons : MsgBoxButtons.GotIt
-              })
-              .then( dc => reject(error) ).catch( noop ),
+            error : error => reject(error)
           })
         }
       })
     })
-
   }
 
-  //#endregion
+  private async createServerProject() : Promise<void> {
+    var dlgData : Partial<CreateServerDlgData> = {
+      Name : this.appCode.toLocaleLowerCase()+'-server',
+      Description : `Express-Server for...`,
+      DbConfigHost: '192.168.',
+      DbConfigPort : 3307,
+      ServerPort : 0,
+      Keywords : "",
+      Author : '',
+      TargetDir : '',
+      DbConfigPassword : "ChangeMe"
+    }
+
+    try{ // determin the database
+      var melSetup = await lastValueFrom(this.appService.getAppSetup())
+      dlgData.DbConfigDatabase = melSetup.AppDbName
+    }
+    catch( error ) { ErrorMessage(this.modal, error as Error ); return }
+    try{ // options-Dialog
+      dlgData =  await openModalDlg<CreateServerComponent, CreateServerDlgData, CreateServerDlgData>(
+        this.modal,
+        CreateServerComponent,
+        dlgData
+      )
+    }
+    catch(error){ noop; return } // dialog canceld
+
+    var createOptions : CreateServerProjectOptions = {
+      name        : dlgData.Name as string,
+      version     : dlgData.Version as string,
+      description : dlgData.Description,
+      keywords    : dlgData.Keywords?.split(',').map( (key : string) => key.trim()) || [],
+      author      : dlgData.Author || '',
+      license     : dlgData.License || '',
+      gitAccount  : dlgData.GitAccount || 'enter_gitaccount',
+      serverPort  : dlgData.ServerPort as number,
+      dbConfig: {
+        host      : dlgData.DbConfigHost as string,
+        port      : dlgData.DbConfigPort as number,
+        username  : dlgData.DbConfigUsername as string,
+        password  : dlgData.DbConfigPassword as string,
+        database  : dlgData.DbConfigDatabase as string,
+        ssl       : dlgData.DbConfigSsl as boolean,
+        timeout   : dlgData.DbConfigTimeout as number * 1000
+      },
+      databaseType :dlgData.DatabaseType as MelDatabaseTypes
+    }
+    try{ // check the targetfolder
+      var projectFolder= [dlgData.TargetDir, dlgData.Name]
+      if (await this.eSvc.ipcRenderer.invoke("fs-exist", projectFolder)){
+        var dirEnt = await this.eSvc.ipcRenderer.invoke('fs-dir', 'list', projectFolder) as any[]
+        if (dirEnt.length > 0)
+          throw createServerPrefix+'ProjectFolderNotEmpty'
+      }
+      else {
+        await this.eSvc.ipcRenderer.invoke('fs-dir','mk', projectFolder)
+      }
+    }
+    catch(error){ ErrorMessage(this.modal, error as Error); return }
+
+    try{ // createServerProject
+      const createResult = await lastValueFrom(this.workbenchService.createServerProject(createOptions))
+      if (createResult.success && createResult.result){
+        var serverZip = await JSZip.loadAsync(createResult.result, {base64 : true, createFolders : true})
+        const projectZipFolder = serverZip.folder(createOptions.name)
+        if (projectZipFolder) {
+          //create the folderstructure
+          for(let folder of projectZipFolder.filter( (path , file) => file.dir )) {
+            await this.eSvc.ipcRenderer.invoke('fs-dir','mk', [dlgData.TargetDir, folder.name])
+          }
+
+          const dataPromises : Promise<string>[] = []
+          const fileNames : string[] = []
+          projectZipFolder.forEach( (path, zippedFile) => {
+            if (!zippedFile.dir){
+              fileNames.push(zippedFile.name) //contains the path
+              dataPromises.push(zippedFile.async('string'))
+            }
+          });
+          const zippedDatas = await Promise.all(dataPromises)
+          for(let i in zippedDatas){
+            const zippedData = zippedDatas[i]
+            await this.eSvc.ipcRenderer.invoke('fs-write', [dlgData.TargetDir, fileNames[i]], zippedData, false)
+          }
+        }
+      } // success
+
+      ReportView(this.modal, {
+        title   : createServerReportPrefix+ (createResult.success ? "Title" : "ErrorTitle"),
+        message : createServerReportPrefix+ (createResult.success ? "Success" : "Failed"),
+        context : Object.assign(dlgData, { appName : this.appName}),
+        reportItems : createResult.success? [] : createResult.reportItems,
+        buttons : MsgBoxButtons.GotIt,
+        default : MsgBoxResult.Positive
+      }).then( noop ).catch( noop )
+
+      this.router.navigate(['object-designer'], {})
+    }
+    catch(error ) { ErrorMessage(this.modal, error as Error); }
+  } //createServerProject()
 }

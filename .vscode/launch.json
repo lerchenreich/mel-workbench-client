@@ -5,10 +5,10 @@
         "name": "Serve and Launch Chrome",
         "type": "pwa-chrome",
         "request": "launch",
-        "preLaunchTask": "npm: ngServe",
+        "preLaunchTask": "npm:ngServe",
         "url": "http://localhost:3041/#",
-        "webRoot": "${workspaceFolder}", 
-        "sourceMaps": true,  
+        "webRoot": "${workspaceFolder}",
+        "sourceMaps": true,
         "timeout": 60000
       },
       {
@@ -32,10 +32,10 @@
         "type": "pwa-chrome",
         "request": "attach",
         "port": 9223,
-        "preLaunchTask": "Renderer.Serve",
+        "preLaunchTask": "npm:ngServe",
         "url": "http://localhost:3041",
         "trace": true,
-        "sourceMaps": true,  
+        "sourceMaps": true,
         "webRoot": "${workspaceFolder}",
         "timeout": 60000
     },
@@ -44,9 +44,8 @@
     {
         "name": "Electron: All",
         "configurations": [
-            "Main",
-            "Serve Renderer"
+          "Main", "Serve Renderer"
         ]
     }
-  ]    
+  ]
 }

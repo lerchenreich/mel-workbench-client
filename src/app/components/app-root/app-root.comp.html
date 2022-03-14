@@ -45,13 +45,13 @@
 </ng-template>
 
 <ng-template listInput
-  let-subtype="subType"
+  let-subType="subType"
   let-value="value"
   let-lookupFor="lookupFor"
   let-assistObs="assistObs"
   >
   <mel-list-input
-    [subType]="subtype"
+    [subType]="subType"
     [value]="value"
     [lookupFor]="lookupFor"
     [assistObs]="assistObs"
@@ -95,23 +95,27 @@
 <ng-template cardInput
   let-caption="caption"
   let-hint="hint"
-  let-subtype="subType"
+  let-subType="subType"
   let-editable="editable"
   let-value="value"
   let-lookupFor="lookupFor"
   let-assistObs="assistObs"
   let-changedObs="changedObs"
+  let-gridClass="gridClass"
+  let-labelClass="labelClass"
   >
   <mel-card-input
     [caption]="caption"
     [hint]="hint"
     [placeholder]="caption"
-    [subType]="subtype"
+    [subType]="subType"
     [editable]="editable"
     [value]="value"
     [lookupFor]="lookupFor"
     [assistObs]="assistObs"
     [changedObs]="changedObs"
+    [gridClass]="gridClass"
+    [labelClass]="labelClass"
   >
   </mel-card-input>
 </ng-template>

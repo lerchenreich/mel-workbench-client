@@ -55,6 +55,48 @@
           "SpDbConfigSsl" : "Serverprojekt Datenbank-SSL",
           "SpDbConfigTimeout" : "Serverprojekt Datenbank-Timeout",
           "SpDatabaseType" : "Serverprojekt Datenbank-Typ [MyAql, Postgres, Ms SQL-Server]"        }
+      },
+      "CreateServerDlgData" : {
+        "CaptionSingular" : "Serverprojekt",
+        "CaptionPlural" : "Serverprojekte",
+        "Caption" : {
+          "Name" : "Projektname",
+          "Description" : "Beschreibung",
+          "Version" : "Version",
+          "Keywords" : "Schlüsselbegriffe",
+          "Author" : "Autor",
+          "License" : "Lizenz",
+          "GitAccount" : "Git-Account",
+          "ServerPort" : "ServerPort",
+          "DbConfigHost" : "Datenbank-Host",
+          "DbConfigPort" : "Datenbank-Port",
+          "DbConfigUsername" : "Datenbank-Benutzername",
+          "DbConfigPassword" : "Datenbank-Passwort",
+          "DbConfigDatabase" : "Datenbank-Name",
+          "DbConfigSsl"    : "Datenbank-SSL",
+          "DbConfigTimeout": "Datenbank-Timeout [s]",
+          "DatabaseType"     : "Datenbank-Engine",
+          "TargetDir"        : "Zielverzeichnis"
+        },
+        "Hint" : {
+          "Name" : "Verzeichnis- und Packagename",
+          "Description" : "Beschreibung des Projektes",
+          "Version" : "Version des Packages",
+          "Keywords" : "Schlüsselbegriffe im Package",
+          "Author" : "Autor im Package",
+          "License" : "Lizenz im Package",
+          "GitAccount" : "",
+          "ServerPort" : "Port auf dem der REST-Service hört",
+          "DbConfigHost" : "Datenbank-Hostname oder IP-Adresse",
+          "DbConfigPort" : "Datenbank-Port",
+          "DbConfigUsername" : "Benutzername mit dem sich der Server anmeldet",
+          "DbConfigPassword" : "Passwort des Serverbenutzers",
+          "DbConfigDatabase" : "Datenbank-Name",
+          "DbConfigSsl"    : "SSL-Verschlüssellung",
+          "DbConfigTimeout": "Timeout in Sekunden",
+          "DatabaseType"     : "Datenbankserver-Typ",
+          "TargetDir"        : "Lokales Downloadverzeichnis für das erstellt Projekt-zip"
+        }
       }
     },
     "Menu" : {
@@ -107,7 +149,15 @@
           "Connect" : "Verbinden",
           "CreateApp" : "App generieren"
         }
+      },
+      "CreateApp" : {
+        "Title" : "Eine neue Anwendung erstellen"
+      },
+      "CreateServer" : {
+        "Title" : "Serverprojekt erstellen",
+        "SelectFolder" :"Zielordner auswählen"
       }
+
     },
     "Function" : {
       "CreateApp" : {
@@ -115,7 +165,18 @@
         "Report" : {
           "Title" : "Neue Anwendung '{{appName}}'",
           "Success" : "Datenbank '{{appCode}}_app' für Anwendung '{{appName}}' wurde erstellt. Möchten Sie im nächsten Schritt das Serverprojekt erstellen?",
+          "ErrorTitle" : "Fehler",
           "Failed"  : "Datenbank '{{appCode}}_app' konnte nicht erstellt werden"
+        }
+      },
+      "CreateServer" : {
+        "Title" : "Serverprojekt erstellen",
+        "ProjectFolderNotEmpty" : "Zielverzeichnis ist nicht leer!",
+        "Report" : {
+          "Title" : "Serverprojekt '{{Name}}'",
+          "Success" : "Serverprojekt '{{Name}}' für Anwendung '{{appName}}' wurde erstellt und in '{{TargetDir}} zur Verfügung gestellt",
+          "ErrorTitle" : "Fehler",
+          "Failed"  : "Serverprojekt '{{Name}}' für Anwendung '{{appName}}' konnte nicht erstellt werden"
         }
       }
     },

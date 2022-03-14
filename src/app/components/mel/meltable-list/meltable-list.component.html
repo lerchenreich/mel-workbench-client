@@ -5,37 +5,37 @@
           <span>{{title}}</span>
           <span class="fill-remaining-space"> </span>
           <button mat-icon-button (click)="importTables($event)" matTooltip="{{'Menu.Button.ImportFromDb' | translate }}"><mat-icon>south</mat-icon></button>
-          
+
           <button mat-icon-button (click) ="filterDlg($event)"  matTooltip="{{'Menu.Button.Filter'|translate}}" [disabled]="locked">
-            <mat-icon svgIcon="filter"></mat-icon></button>  
+            <mat-icon svgIcon="Filter"></mat-icon></button>
           <button mat-icon-button (click) ="removeFilters($event)" matTooltip="{{'Menu.Button.ClearFilter'|translate}}" [disabled]="locked || !hasUnlockedFilters">
-            <mat-icon svgIcon="clear_filter"></mat-icon></button>     
-            <button mat-icon-button (click) ="filterDlg($event, true)" [disabled]="locked" [hidden]="!hasFlowFilters"  
+            <mat-icon svgIcon="ClearFilter"></mat-icon></button>
+            <button mat-icon-button (click) ="filterDlg($event, true)" [disabled]="locked" [hidden]="!hasFlowFilters"
                 matTooltip="{{'Menu.Button.FlowFilter'|translate}}">
-              <mat-icon svgIcon="flowfilter"></mat-icon></button>  
-            <button mat-icon-button (click) ="removeFlowFilters($event)"   [disabled]="locked || !hasActiveFlowFilters" [hidden]="!hasFlowFilters" 
+              <mat-icon svgIcon="Flowfilter"></mat-icon></button>
+            <button mat-icon-button (click) ="removeFlowFilters($event)"   [disabled]="locked || !hasActiveFlowFilters" [hidden]="!hasFlowFilters"
                 matTooltip="{{'Menu.Button.ClearFlowFilter'|translate}}">
-              <mat-icon svgIcon="clear_flowfilter"></mat-icon></button> 
-              <div style="margin-left:30px"></div>       
+              <mat-icon svgIcon="ClearFlowfilter"></mat-icon></button>
+              <div style="margin-left:30px"></div>
             <button mat-icon-button [routerLink]="routeToAddEntity"  [disabled]="!insertAllowed" matTooltip="{{'Menu.Button.New' | translate }}"><mat-icon>add</mat-icon></button>
             <button mat-icon-button [routerLink]="routeToEditEntity" [disabled]="nothingSelected" matTooltip="{{'Menu.Button.Edit' | translate }}"><mat-icon>create</mat-icon></button>
-              <div style="margin-left:30px"></div>   
-              <button mat-icon-button (click)="save($event)"   [disabled]="!modifyAllowed || nothingSelected" 
+              <div style="margin-left:30px"></div>
+              <button mat-icon-button (click)="save($event)"   [disabled]="!modifyAllowed || nothingSelected"
               matTooltip="{{'Menu.Button.Save'|translate}}">
             <mat-icon>done</mat-icon> </button>
-            <button mat-icon-button (click)="remove($event)" [disabled]="!deleteAllowed || nothingSelected" 
+            <button mat-icon-button (click)="remove($event)" [disabled]="!deleteAllowed || nothingSelected"
                 matTooltip="{{'Menu.Button.Delete'|translate}}">
-              <mat-icon>delete</mat-icon> </button>     
+              <mat-icon>delete</mat-icon> </button>
              <button mat-icon-button [routerLink]="routePrevious" matTooltip="{{'Menu.Button.Cancel' | translate }}"><mat-icon>clear</mat-icon>
             </button>
           </mat-toolbar>
         </div>
-     
+
       <div class="modal-content">
-        <mel-list #melList class="mat-elevation-z4"  [style.height]="listHeight"  [context]="listContext" [dataSource]="dataSource"></mel-list>      
+        <mel-list #melList class="mat-elevation-z4"  [style.height]="listHeight"  [context]="listContext" [dataSource]="dataSource"></mel-list>
         <div #pageSlider class="pageSlider-v" >
-          <ngx-slider [(value)]="currPageNo" [options]="sliderOptions" (userChangeEnd)="onSliderChangeEnd()"> </ngx-slider>   
-        </div>      
+          <ngx-slider [(value)]="currPageNo" [options]="sliderOptions" (userChangeEnd)="onSliderChangeEnd()"> </ngx-slider>
+        </div>
       </div>
     </mat-card>
   </div>

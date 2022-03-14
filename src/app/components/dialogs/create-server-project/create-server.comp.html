@@ -1,0 +1,47 @@
+
+<div class="modal-header" modalStyle="max-width:70%;">
+  <h4 class="modal-title" style="text-align: center;">{{transPrefix+'Title' | translate }}</h4>
+</div>
+
+<div class="modal-body bodyGrid gridColumns3" >
+  <mel-card-field [style.grid-column]="'1/2'" [context]="context('Name')">       </mel-card-field>
+  <mel-card-field [style.grid-column]="'2/4'" [context]="context('Description')"></mel-card-field>
+
+  <mel-card-field [context]="context('Version')" >   </mel-card-field>
+  <mel-card-field [context]="context('GitAccount')"> </mel-card-field>
+  <mel-card-field [context]="context('Keywords')" >  </mel-card-field>
+
+
+  <mel-card-field [context]="context('Author')"> </mel-card-field>
+  <mel-card-field [context]="context('License')"> </mel-card-field>
+  <mel-card-field [context]="context('ServerPort')"> </mel-card-field>
+
+  <mel-card-field [style.grid-column]="'1/4'" [context]="context('TargetDir')">  </mel-card-field>
+
+  <div class="separatorHorz"></div>
+
+  <mel-card-field [context]="context('DatabaseType')"> </mel-card-field>
+  <mel-card-field [context]="context('DbConfigHost')"> </mel-card-field>
+  <mel-card-field [context]="context('DbConfigPort')"> </mel-card-field>
+
+
+  <mel-card-field [context]="context('DbConfigUsername')"> </mel-card-field>
+  <mel-card-field [context]="context('DbConfigPassword')"> </mel-card-field>
+  <mel-card-field [context]="context('DbConfigDatabase')"> </mel-card-field>
+
+
+  <mel-card-field [context]="context('DbConfigSsl')"> </mel-card-field>
+  <mel-card-field [context]="context('DbConfigTimeout')"> </mel-card-field>
+
+</div>
+
+
+<div class="modal-footer">
+  <button mat-raised-button color="warn" (click)="dismissClicked()">{{'Command.Cancel'|translate}}</button>
+  <button mat-raised-button color="primary" (click)="okClicked()" [disabled]="!isValid || !isEditMode">{{'Command.Ok'|translate}}</button>
+</div>
+
+
+
+
+

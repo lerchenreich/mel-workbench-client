@@ -22,7 +22,7 @@
             "endsPattern": "^.*Terminal will be reused by tasks, press any key to close it.*"
           }
         }
-      }, 
+      },
       {
         "label": "Renderer.BuildAndServe",
         "type": "shell",
@@ -46,9 +46,9 @@
         }
       },
       {
-        "label": "npm: ngServe",
+        "label": "npm:ngServe",
         "type": "npm",
-        "script": "ngServe",
+        "script": "ng:serve",
         "isBackground": true,
         "problemMatcher": {
           "owner": "typescript",

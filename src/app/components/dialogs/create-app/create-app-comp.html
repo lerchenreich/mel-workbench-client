@@ -1,16 +1,16 @@
 
 <div class="modal-header" modalStyle="max-width:40%;">
   <h4 class="modal-title" style="text-align: center;">{{transPrefix+'Title' | translate }}</h4>
-</div> 
+</div>
 
-<div class="modal-body" style="text-align: center;">
-  
-  <div class="col-lg mel-card-field"><mel-card-field [context]="context('AppCode')">        </mel-card-field>  </div>  
-  <div class="col-lg mel-card-field"><mel-card-field [context]="context('AppName')">        </mel-card-field>  </div>          
-  <div class="col-lg mel-card-field"><mel-card-field [context]="context('Version')" >       </mel-card-field>  </div>  
-  <div class="col-lg mel-card-field"><mel-card-field [context]="context('CompanyDbName')">  </mel-card-field>  </div>          
-  <div class="col-lg mel-card-field"><mel-card-field [context]="context('CompanyName')">    </mel-card-field>  </div>
- 
+<div class="modal-body bodyGrid gridColumns1" >
+
+ <mel-card-field [context]="context('AppCode')">        </mel-card-field>
+ <mel-card-field [context]="context('AppName')">        </mel-card-field>
+ <mel-card-field [context]="context('Version')" >       </mel-card-field>
+ <mel-card-field [context]="dbNameContext()">  </mel-card-field>
+ <mel-card-field [context]="context('CompanyName')">    </mel-card-field>
+
 </div>
 
 <div class="modal-footer">

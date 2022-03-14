@@ -8,7 +8,7 @@
       <mat-label>{{ LabelEnterUrl | translate }}</mat-label>
      <input matInput type="text" [(ngModel)]="ipPort"  (change)="onUrlChanged()">
       <mat-hint>{{ HintUrl | translate }}</mat-hint>
-      <span class="melError" [style.margin-bottom]="'1em'"  [style.opacity]="urlErrorText.length">{{urlErrorText | translate}}</span>
+      <span class="mel-error" [style.margin-bottom]="'1em'"  [style.opacity]="urlErrorText.length">{{urlErrorText | translate}}</span>
     </mat-form-field>
 
     <br>
