@@ -3,7 +3,7 @@
   "App" : {
     "Title" : "Mel-Anwendungsenwicklung",
     "Message" : {
-      "NoDbAvailable" : "Keine Datanbank vorhanden"
+      "NoDbAvailable" : "Keine Datenbank vorhanden"
     },
     "Entity" : {
       "CreateAppDlgData" : {
@@ -100,13 +100,15 @@
       }
     },
     "Menu" : {
-      "AllApps" : "Anwendungen...",
-      "CreateApp" :"Anwendung erstellen",
-      "CreateServer" : "Serverprojekt erstellen",
-      "CreateClient" : "Clientprojekt erstellen",
-      "Setup" : "Einrichtung"
+      "Tables" : "Tabellen",
+      "More" : {
+        "AllApps" : "Anwendungen...",
+        "CreateApp" :"Anwendung erstellen",
+        "CreateServer" : "Serverprojekt erstellen",
+        "CreateClient" : "Clientprojekt erstellen",
+        "Setup" : "Einrichtung"
+      }
     },
-
     "CreateServer_copied from mel-client" : {
       "Title" : "REST-Server generieren",
       "WaitFor" : "wird generiert...",

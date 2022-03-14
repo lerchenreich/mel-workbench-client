@@ -9,20 +9,19 @@ import { AlertService, AppService, MelTableService,ListDbPage, RowUI, MelTable }
 
 
 @Component({
-  selector: 'apptables-dialog',
-  templateUrl: './apptables-dialog.component.html',
-  styleUrls: ['./apptables-dialog.component.css']
+  selector: 'apptable-list-dialog',
+  templateUrl: './apptable-list.component.html'
 })
-export class AppTablesDialogComponent extends ListDbPage<MelTable> implements OnInit{
+export class AppTableListComponent extends ListDbPage<MelTable> implements OnInit{
   activeTables : string [] = []
   transPrefix = 'App.Dialog.AppTables.'
-  constructor(public modalRef : ModalRef, 
-              private appService : AppService, 
+  constructor(public modalRef : ModalRef,
+              private appService : AppService,
               melTableService : MelTableService,
-              translate : TranslateService, 
-              modal : ModalService, 
+              translate : TranslateService,
+              modal : ModalService,
               snackBar  : MatSnackBar,
-              alertService : AlertService) { 
+              alertService : AlertService) {
   super(melTableService, translate, modal, snackBar, alertService)
   }
 
@@ -38,7 +37,7 @@ export class AppTablesDialogComponent extends ListDbPage<MelTable> implements On
   ngOnInit(){
     super.ngOnInit()
     //if (this.viewFilters)
-    //  this.setFilters(this.viewFilters.fieldFilters)  
+    //  this.setFilters(this.viewFilters.fieldFilters)
     this.afterFilterChanged()
   }
 
@@ -52,7 +51,7 @@ export class AppTablesDialogComponent extends ListDbPage<MelTable> implements On
    * retrieve all tables
    */
   protected retrieveData() {
-    var activeTables : string[] 
+    var activeTables : string[]
     this
       .setFilter("Active", "1")
       .findMany()
@@ -60,29 +59,29 @@ export class AppTablesDialogComponent extends ListDbPage<MelTable> implements On
         next : tables => { activeTables = tables.map(table => `\`${table.Name}\``)},
         error : error =>  { this.alertError("getTableNames-Error: " + error)},
         complete : () =>     {
-          const options : GetTablesOptions = { 
-                  database : '', 
+          const options : GetTablesOptions = {
+                  database : '',
                   condition :  activeTables.length > 0 ? ` NOT IN (${activeTables.join(",")})` : undefined
-                } 
-            
+                }
+
           forkJoin([this.appService.getAppTableNames(options), this.appService.getMelTableNames(options)])
           .subscribe( {
-            next : ([namesApp, namesMel]) => { 
+            next : ([namesApp, namesMel]) => {
               this.Rec.dataSet = namesApp.map(name => new MelTable({ Name : name }))
                                                       .concat(namesMel.map(name => new MelTable({ Name : name })))
-              this.totalRecCount = this.Rec.dataSet.length 
+              this.totalRecCount = this.Rec.dataSet.length
             },
             error : err => {
               this.alertError("getTableNames-Error: " + err)
             },
             complete : () => {
-              this.currPageNo = 1; 
+              this.currPageNo = 1;
               this.refresh()
             }
-          })  
+          })
         }
       })
-  } 
+  }
 
   refresh(){
     this.setViewMode()

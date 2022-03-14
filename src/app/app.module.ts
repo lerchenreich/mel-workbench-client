@@ -43,7 +43,7 @@ import { SelectAppComponent }         from './components/dialogs/select-app/sele
 import { AppToolbarComponent }        from './components/app-toolbar/app-toolbar.component';
 import { AppRootComponent }           from './components/app-root/app-root.comp';
 
-import { AppTablesDialogComponent }   from './components/dialogs/apptables-dialog/apptables-dialog.component';
+import { AppTableListComponent }   from './components/dialogs/apptables-dialog/apptable-list.component';
 import { CreateAppDlgComponent }   from './components/dialogs/create-app/create-app-comp';
 
 import { initializationFactory }      from './initialization'
@@ -73,7 +73,7 @@ export function createTranslateLoader(http: HttpClient) {
     MelTableListComponent,
     MelTableCardComponent,
     SelectAppComponent,
-    AppTablesDialogComponent,
+    AppTableListComponent,
     CreateAppDlgComponent,
     CreateServerComponent,
     ModalStyleDirective,

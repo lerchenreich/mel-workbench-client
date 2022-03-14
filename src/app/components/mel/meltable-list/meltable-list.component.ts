@@ -28,8 +28,10 @@ export class MelTableListComponent extends ListRoutedPage<MelTable> {
   constructor(private appService : AppService,
               private melFieldService : MelFieldService,
               entityService : MelTableService,
-              router: Router, translate : TranslateService,
-              modal : ModalService, snackBar : MatSnackBar,
+              router: Router,
+              translate : TranslateService,
+              modal : ModalService,
+              snackBar : MatSnackBar,
               alertService : AlertService) {
     super(router, entityService, translate, modal, snackBar, alertService)
     this.accessRights = "md"
