@@ -10,7 +10,8 @@ import { TableMetadata, sqlToFieldtypesMap} from 'mel-common'
 import { ListRoutedPage, MelTable, FieldInfo, MelField, MelTableService, AlertService,
          MessageBox, MsgBoxButtons, MsgBoxData, MsgBoxResult,
          AppService, MelFieldService, EntityService,
-         progressBarDlg} from 'mel-client'
+         progressBarDlg,
+         Permission} from 'mel-client'
 import { ProgressDlgController } from 'mel-client/lib/components/modal/progress/progress';
 import { noop } from 'lodash';
 
@@ -34,7 +35,7 @@ export class MelTableListComponent extends ListRoutedPage<MelTable> {
               snackBar : MatSnackBar,
               alertService : AlertService) {
     super(router, entityService, translate, modal, snackBar, alertService)
-    this.accessRights = "md"
+    this.permissions.set([Permission.Modify])
     router.events.pipe(untilDestroyed(this)).subscribe( event => {
       if (event instanceof NavigationEnd){
         this.retrieveData()

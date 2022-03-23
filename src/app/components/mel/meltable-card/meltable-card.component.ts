@@ -6,38 +6,39 @@ import { TranslateService } from '@ngx-translate/core';
 import { NgbModal as ModalService } from '@ng-bootstrap/ng-bootstrap';
 import { isEmpty } from 'lodash'
 
-import { MelTable, CardDbPage,  MelTableService, AlertService, EntityUI } from 'mel-client';
+import { MelTable, CardDbPage,  MelTableService, AlertService, EntityUI, PagePermissions, Permission } from 'mel-client';
+
 
 @Component({
   selector: 'app-meltable-card',
   templateUrl: './meltable-card.component.html',
-  styleUrls: ['./meltable-card.component.scss'],
+  styleUrls: ['./meltable-card.comp.scss'],
   providers: [MelTableService]
 })
 @UntilDestroy()
 export class MelTableCardComponent  extends CardDbPage<MelTable> implements OnInit {
   constructor(private route: ActivatedRoute,
-              router: Router, 
+              router: Router,
               translate : TranslateService,
-              melTableService : MelTableService,  
+              melTableService : MelTableService,
               modal : ModalService,
-              snackBar : MatSnackBar, alertService : AlertService ) { 
+              snackBar : MatSnackBar, alertService : AlertService ) {
     super( router, melTableService,  translate, modal, snackBar, alertService)
   }
   get sublistLocked() : boolean { return !isEmpty(this.rec?.Name)}
   public get ui() : EntityUI<MelTable> { return this.entityUI }
   ngOnInit() : void {
-    this.accessRights = 'md'
+    this.permissions.set([Permission.Modify, Permission.Delete])
     const tablename = this.route.snapshot.paramMap.get('name')
     if (tablename){
-      if ( tablename.length === 0)  
+      if ( tablename.length === 0)
         this.add()
       else {
-        this.param.Name = tablename  
+        this.param.Name = tablename
         this.rec.Name = tablename
-        this.get([this.findObserver])
-      } 
+        this.get().subscribe(this.findObserver)
+      }
     }
   }
-  
+
 }

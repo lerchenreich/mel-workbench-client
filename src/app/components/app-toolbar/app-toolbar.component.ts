@@ -16,7 +16,7 @@ export enum MenuCommands {
   templateUrl: './app-toolbar.component.html'
 })
 export class AppToolbarComponent implements OnInit {
-  readonly transPrefix = 'App.Menu.More'
+  readonly transPrefix = 'App.Menu.More.'
   get CreateServer() : string { return this.transPrefix + "CreateServer" }
   get CreateClient() : string { return this.transPrefix + "CreateClient" }
   get RunSetup() : string { return this.transPrefix + "Setup" }

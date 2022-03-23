@@ -1,4 +1,98 @@
 /* You can add global styles to this file, and also import other style files */
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 
+/* mel-client-styles */
+.mat-cell {
+  padding-right: 6px;
+}
+
+td:focus{
+  outline-style: none;
+}
+th.mat-header-cell:first-child, td.mat-cell:first-child {
+  padding-left: 6px;
+  color:red;
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family:"Helvetica Neue", sans-serif; }
+
+.fill-remaining-space {
+    flex: 1 1 auto;
+}
+
+.sticky-table-800 {
+    height: 800px;
+    overflow: auto;
+}
+input.mat-input-element{
+  margin-top:0px;
+  width:100%;
+}
+.mat-header-cell {
+  font-size: 14px;
+  font-weight: 600;
+}
+.mat-form-field {
+  margin-right: 20px;
+}
+.mat-column-select {
+    overflow: initial;
+  }
+
+/* kopiert */
+table.mat-table {
+    border-spacing: 0;
+    width: 100%; /* ergänzung */
+}
+
+label.mat-checkbox-layout {
+  margin-bottom: 0.1rem;
+  margin-left: 5px;
+}
+label.form-label{
+  margin-bottom: 0.1rem;
+}
+mel-card-field {
+  text-align: left;
+  font-size: .75rem;
+  font-weight: 500;
+}
+
+mel-card-input > div {
+  display : grid;
+  grid-template-rows:1fr 1fr;
+  grid-row-gap: 2px;
+  align-items: end;
+}
+
+mel-card-select > div {
+  display : grid;
+  grid-template-rows:1fr 1fr;
+  grid-template-columns:100%;
+  grid-gap: 2px 2px;
+  align-items: end;
+}
+
+mel-card-checkbox > div {
+  display : grid;
+  grid-template-rows:2fr 1fr;
+  grid-template-columns:100%;
+  grid-gap: 2px 2px;
+  align-items: end;
+}
+
+.mel-error {
+  color : red;
+  font-size: .6rem;
+  opacity: 0;
+  transition: opacity 500ms;
+  display: inline-block;
+/*     height : 1px;*/
+}
+
+ngb-modal-window.mel {
+  z-index: 1;
+  background-color: rgb(240, 240, 240);
+}
 

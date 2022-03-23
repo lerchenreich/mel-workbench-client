@@ -1,6 +1,6 @@
 <div #page style="height:100%; display:flex; justify-content:center;">
-    <mat-card style="min-width:100%">
-      <div class="modal-header">
+    <mat-card style="min-width:95%">
+      <div>
         <mat-toolbar role="navigation" style="background:#ffffff;color:#0f0f0f">
           <span>{{title}}</span>
           <span class="fill-remaining-space"> </span>
@@ -31,8 +31,8 @@
           </mat-toolbar>
         </div>
 
-      <div class="modal-content">
-        <mel-list #melList class="mat-elevation-z4"  [style.height]="listHeight"  [context]="listContext" [dataSource]="dataSource"></mel-list>
+      <div>
+        <mel-list #melList [style.height]="listHeight"  [context]="listContext" [dataSource]="dataSource"></mel-list>
         <div #pageSlider class="pageSlider-v" >
           <ngx-slider [(value)]="currPageNo" [options]="sliderOptions" (userChangeEnd)="onSliderChangeEnd()"> </ngx-slider>
         </div>
